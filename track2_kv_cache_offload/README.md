@@ -28,24 +28,29 @@ With a model size of 8 GB running on a standard 16 GB GPU MIG slice, handling ev
 
 ---
 
-## Memory Disaggregation Mechanics
+## Disaggregated Memory & Interconnect Topology
 
-To solve this memory constraint, the gateway implements a virtual memory manager:
+To maintain complete cryptographic isolation while preserving context data, the proxy architecture shifts virtual address mapping entirely out of software-defined space and moves it straight to hardware-constrained boundaries. 
 
 ```
-               ┌──────────────────────────────────────┐
-               │              GPU HBM                 │
-               │  [ Gemma 3 Model Weights: 8 GB ]     │
-               │  [ Active KV Cache Blocks: < 6.4 GB ]│
-               └──────────────────┬───────────────────┘
-                                  │
-                  GPU Utilization │ (PCIe Gen 4 x8)
-                  Exceeds 90%     │ Paging Out (Evict Coldest LRU)
-                                  ▼
-               ┌──────────────────────────────────────┐
-               │             Host CPU RAM             │
-               │  [ Offloaded KV Cache Blocks ]       │
-               └──────────────────────────────────────┘
+The structural topology executes over three distinct physical planes:
+
+```text
++-----------------------------------------------------------------------+
+|                       PROXMOX COMPUTE NODE HOST                       |
+|                                                                       |
+|  +-----------------------+              +--------------------------+  |
+|  | NVIDIA Blackwell HBM  |              |   Host System RAM Pool   |  |
+|  | (Level-1 L1 Model KV) |              |  (Level-2 L2 Swap Space) |  |
+|  +-----------+-----------+              +------------+-------------+  |
+|              ^                                       ^                |
+|              |         Asynchronous Paging           |                |
+|              +=======================================+                |
+|                  PCIe Gen 4 x8 Bus (16 GB/s Fabric)                   |
+|                                                                       |
++-----------------------------------------------------------------------+
+|                 TAILSCALE ENCRYPTED OVERLAY NETWORK                   |
++-----------------------------------------------------------------------+
 ```
 
 1. **Safety Threshold Enforcement**: Total GPU utilization (model weights + active KV caches) is capped at **90%** of available HBM (14,745.6 MB out of 16 GB).
