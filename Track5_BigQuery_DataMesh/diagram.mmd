@@ -1,0 +1,45 @@
+graph TD
+    %% Define styles and classes
+    classDef stream fill:#e1f5fe,stroke:#01579b,stroke-width:2px;
+    classDef storage fill:#efebe9,stroke:#4e342e,stroke-width:2px;
+    classDef compute fill:#ede7f6,stroke:#4527a0,stroke-width:2px;
+    classDef broker fill:#fff3e0,stroke:#e65100,stroke-width:2px;
+    classDef agent fill:#e8f5e9,stroke:#1b5e20,stroke-width:2px;
+    classDef governance fill:#f3e5f5,stroke:#4a148c,stroke-width:2px;
+
+    %% Data flow topology
+    subgraph Data Generation & Ingestion
+        TWR[Telco Cell Towers]:::stream -->|Raw CD&R Streams| SWA[BigQuery Storage Write API]:::stream
+    end
+
+    subgraph BigQuery Data Lakehouse Domain
+        SWA -->|Stream Buffer Ingestion| BQ_RAW[(Raw Telemetry Table<br>telco_mesh.tower_telemetry)]:::storage
+        
+        %% Stateful Continuous Query execution
+        BQ_RAW -->|Live Event Feeds| BQ_CQ{BigQuery Continuous Query<br>Stateful Streaming SQL}:::compute
+    end
+
+    subgraph Messaging & Orchestration
+        BQ_CQ -->|Export Data Options| PS_TOPIC[Google Cloud Pub/Sub Topic<br>network-anomalies]:::broker
+    end
+
+    subgraph Autonomous Agentic Layer
+        PS_TOPIC -->|Event Push Subscriptions| AG_ROUTER[Autonomous AI Agent / Router]:::agent
+        AG_ROUTER -->|Cell Tower Reboot / API Action| ACT[Self-Healing API Endpoint]:::stream
+        AG_ROUTER -->|Escalate Congestion| ALERT[Slack / PagerDuty Alert]:::broker
+    end
+
+    subgraph Governance & Metadata Mesh
+        KC[Google Cloud Knowledge Catalog]:::governance
+        KC -.->|Active Metadata Sync| BQ_RAW
+        KC -.->|Semantic Schemas| AG_ROUTER
+        KC -.->|Topic Routing Policies| PS_TOPIC
+    end
+
+    %% Apply styles
+    class TWR,SWA,ACT stream;
+    class BQ_RAW storage;
+    class BQ_CQ compute;
+    class PS_TOPIC,ALERT broker;
+    class AG_ROUTER agent;
+    class KC governance;

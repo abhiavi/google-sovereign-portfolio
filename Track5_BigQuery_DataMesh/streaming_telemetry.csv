@@ -1,0 +1,11 @@
+timestamp,traffic_level,architecture,event_count,anomaly_count,latency_seconds,compute_overhead_cores,simulated_cost_usd
+2026-06-04 12:45:00,Off-Peak,Micro-batch ETL,3000,298,153.212,135.05,0.305624
+2026-06-04 12:45:00,Off-Peak,Continuous Query (Pub/Sub),3000,298,0.285,600.0,0.003345
+2026-06-04 12:45:00,Low,Micro-batch ETL,15000,1485,154.512,138.22,0.306214
+2026-06-04 12:45:00,Low,Continuous Query (Pub/Sub),15000,1485,0.312,600.0,0.003387
+2026-06-04 12:45:00,Medium,Micro-batch ETL,60000,6023,155.842,145.42,0.308823
+2026-06-04 12:45:00,Medium,Continuous Query (Pub/Sub),60000,6023,0.345,600.0,0.003562
+2026-06-04 12:45:00,High,Micro-batch ETL,180000,27150,158.411,155.12,0.314218
+2026-06-04 12:45:00,High,Continuous Query (Pub/Sub),180000,27150,0.385,600.0,0.004889
+2026-06-04 12:45:00,Peak,Micro-batch ETL,300000,45080,161.222,165.71,0.325512
+2026-06-04 12:45:00,Peak,Continuous Query (Pub/Sub),300000,45080,0.425,600.0,0.005866
