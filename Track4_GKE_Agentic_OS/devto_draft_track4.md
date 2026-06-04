@@ -20,15 +20,6 @@ For standard applications, this works perfectly. For distributed AI, it is a rec
 
 Consider a GKE cluster consisting of **4 GPU nodes**, where each node is equipped with **8 x NVIDIA A100-80GB GPUs** (yielding a cluster total of 32 GPUs). 
 
-```mermaid
-graph TD
-    subgraph GKE Cluster: 32 GPUs total
-        N1[Node 1: 8 GPUs]
-        N2[Node 2: 8 GPUs]
-        N3[Node 3: 8 GPUs]
-        N4[Node 4: 8 GPUs]
-    end
-```
 
 Now, suppose two engineers simultaneously submit two separate distributed jobs:
 *   **Job A (Llama-3-70B Fine-Tuning)**: Requires a gang of **4 pods** (1 pod per node, each requesting 8 GPUs).
@@ -42,31 +33,6 @@ The standard Kubernetes scheduler processes the pods from both jobs. Due to queu
 
 At this point, the cluster's GPUs are **100% allocated (32/32 GPUs in use)**. The remaining pods (**Pod A3, A4, B3, and B4**) are placed in a `Pending` state because there are no available GPUs left in the cluster.
 
-```mermaid
-graph TD
-    subgraph Node 1
-        A1[Pod A1: 8 GPUs - Running/Rendezvous]
-    end
-    subgraph Node 2
-        B1[Pod B1: 8 GPUs - Running/Rendezvous]
-    end
-    subgraph Node 3
-        A2[Pod A2: 8 GPUs - Running/Rendezvous]
-    end
-    subgraph Node 4
-        B2[Pod B2: 8 GPUs - Running/Rendezvous]
-    end
-    
-    A3[Pod A3] -.->|Pending| PendingQueue[No GPUs Available]
-    A4[Pod A4] -.->|Pending| PendingQueue
-    B3[Pod B3] -.->|Pending| PendingQueue
-    B4[Pod B4] -.->|Pending| PendingQueue
-    
-    style A1 fill:#e74c3c,stroke:#c0392b,color:#fff
-    style B1 fill:#3498db,stroke:#2980b9,color:#fff
-    style A2 fill:#e74c3c,stroke:#c0392b,color:#fff
-    style B2 fill:#3498db,stroke:#2980b9,color:#fff
-```
 
 ### The Deadlock Manifestation
 Because these are distributed ML workloads running PyTorch `torchrun` or Megatron-LM, they require **all ranks to join a network rendezvous** (typically using the `c10d` backend over TCP or GPUDirect-TCPX) before any computation can start. 
@@ -87,31 +53,6 @@ Below is the architectural flow showing how Kueue manages the lifecycle of these
 
 ![Architecture Diagram](./architecture_diagram.svg)
 
-```mermaid
-sequenceDiagram
-    autonumber
-    actor Engineer
-    participant LocalQueue as Kueue Local Queue
-    participant ClusterQueue as Kueue Cluster Queue
-    participant GKE as GKE Scheduler
-    
-    Engineer->>LocalQueue: Submit Job A (4 pods, 32 GPUs)
-    Note over LocalQueue: Job A is suspended (suspend: true)
-    Engineer->>LocalQueue: Submit Job B (4 pods, 32 GPUs)
-    Note over LocalQueue: Job B is suspended (suspend: true)
-    
-    ClusterQueue->>ClusterQueue: Evaluate available GPUs (32 total)
-    ClusterQueue->>GKE: Admit Job A (Set suspend: false)
-    Note over GKE: GKE schedules Pods A1-A4 together
-    Note over GKE: Job A executes successfully
-    
-    Note over ClusterQueue: Job B remains suspended in queue
-    
-    Note over GKE: Job A completes, releases 32 GPUs
-    ClusterQueue->>GKE: Admit Job B (Set suspend: false)
-    Note over GKE: GKE schedules Pods B1-B4 together
-    Note over GKE: Job B executes successfully
-```
 
 Instead of allowing the standard scheduler to greedily pull pods, Kueue acts as a gatekeeper:
 1.  **Suspension on Creation**: When a Job is submitted to a Kueue-managed queue, Kueue's mutating webhook automatically intercepts the Job and sets `spec.suspend: true`. No pods are created yet.
@@ -245,20 +186,6 @@ Under **GKE Kueue**, the timeline progressed optimally:
 *   **t=3520**: `job-b` completes execution and exits. 
 *   **t=3600**: The cluster finishes the window with **both jobs successfully completed** and **zero deadlock time**.
 
-```mermaid
-gantt
-    title GKE Kueue Execution Timeline (3600s)
-    dateFormat  X
-    axisFormat %s
-    section Kueue Scheduler
-    Job A: Rendezvous    :active, 0, 10
-    Job A: Training      :done, 10, 1760
-    Job B: Rendezvous    :active, 1760, 1770
-    Job B: Training      :done, 1770, 3520
-    Cluster Idle         :crit, 3520, 3600
-    section Standard Scheduler
-    Job A & B: Stuck Rendezvous :crit, 0, 3600
-```
 
 ---
 
