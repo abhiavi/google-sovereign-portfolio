@@ -1,0 +1,69 @@
+# kueue_resources.yaml - GKE Kueue Resource Configurations for Gang Scheduling
+apiVersion: kueue.x-k8s.io/v1beta1
+kind: ResourceFlavor
+metadata:
+  name: "a100-gpu-80gb"
+spec:
+  nodeLabels:
+    cloud.google.com/gke-gpu: "nvidia-tesla-a100"
+---
+apiVersion: kueue.x-k8s.io/v1beta1
+kind: ClusterQueue
+metadata:
+  name: "heavy-ml-cluster-queue"
+spec:
+  namespaceSelector: {} # Match all namespaces
+  cohort: "ml-cohort"
+  resourceGroups:
+  - coveredResources: ["cpu", "memory", "nvidia.com/gpu"]
+    flavors:
+    - name: "a100-gpu-80gb"
+      resources:
+      - name: "nvidia.com/gpu"
+        nominalQuota: 32 # Maximum 32 GPUs in the cluster (4 nodes x 8 GPUs)
+---
+apiVersion: kueue.x-k8s.io/v1beta1
+kind: LocalQueue
+metadata:
+  namespace: "default"
+  name: "kueue-gang-queue"
+spec:
+  clusterQueue: "heavy-ml-cluster-queue"
+---
+apiVersion: batch/v1
+kind: Job
+metadata:
+  name: llama-3-70b-gang-job
+  namespace: default
+  labels:
+    kueue.sh/queue-name: kueue-gang-queue
+spec:
+  parallelism: 4
+  completions: 4
+  completionMode: Indexed
+  suspend: true # Intercepted and managed by Kueue
+  template:
+    spec:
+      subdomain: llama-service
+      restartPolicy: Never
+      containers:
+      - name: llama-70b-container
+        image: us-docker.pkg.dev/vertex-ai/training/pytorch-gpu.2-2.py310:latest
+        resources:
+          limits:
+            nvidia.com/gpu: 8
+            cpu: 64
+            memory: 240Gi
+          requests:
+            nvidia.com/gpu: 8
+            cpu: 64
+            memory: 240Gi
+        command:
+        - "torchrun"
+        - "--nproc_per_node=8"
+        - "--nnodes=4"
+        - "--node_rank=$(System.Job.Index)"
+        - "--rdzv_id=llama_70b_gang"
+        - "--rdzv_backend=c10d"
+        - "--rdzv_endpoint=llama-3-70b-gang-job-0.llama-service:29500"
+        - "train.py"
