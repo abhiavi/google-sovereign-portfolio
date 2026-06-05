@@ -164,4 +164,4 @@ When a network anomaly is detected, the event isn't just stored—it is pushed t
 
 The transition from a passive data repository to an active, autonomous data mesh represents the next frontier in cloud data architecture. By using BigQuery Continuous Queries to build stateful, real-time filters and routing events directly to messaging layers like Pub/Sub, enterprises can slash operational latency by over 99.7% while maintaining strict data governance through the Knowledge Catalog.
 
-The code and data metrics used in this benchmark simulation are available in our [GitHub repository](https://github.com/adraca-ecosystem/track5-bq-datamesh).
+The code and data metrics used in this benchmark simulation are available in our [GitHub repository](https://github.com/IITK-Research-Lab-ecosystem/track5-bq-datamesh).
