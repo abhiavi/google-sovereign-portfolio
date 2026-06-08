@@ -6,12 +6,26 @@ This repository contains the engineering assets, simulation code, and publicatio
 
 ## Architecture Diagram
 
-![Autonomous Data Mesh Architecture Diagram](architecture_diagram.png)
+```mermaid
+graph TD
+    A[Telco Network Equipment] -->|Continuous Telemetry Logs| B(BigQuery Storage Write API)
+    B -->|Sub-Second Ingestion Buffer| C[(BigQuery Raw Partitioned Table)]
+    C -->|Persistent Streaming Evaluation| D{Stateful Continuous Query SQL}
+    D -->|Filter: Signal Strength < -100 dBm| E[Google Cloud Pub/Sub Topic]
+    E -->|Real-Time Event Push| F[Autonomous AI Agent / Router]
+    F -->|Verify Contracts & Lineage| G[(Active Knowledge Catalog)]
+    F -->|Trigger Immediate Event| H[Cell Tower Automated Reboot API]
+
+    style A fill:#f9f,stroke:#333,stroke-width:2px
+    style D fill:#bbf,stroke:#333,stroke-width:2px
+    style G fill:#bfb,stroke:#333,stroke-width:2px
+    style H fill:#ffb,stroke:#333,stroke-width:2px
+```
 
 ### Architectural Flow:
 1. **Telco Event Stream**: Telemetry logs (CDR, signal strength) are streamed continuously from cellular tower equipment.
 2. **BigQuery Storage Write API**: Handles low-latency, high-velocity ingestion directly into raw tables.
-3. **BigQuery Raw Table**: Houses raw log data partitions (`telco_mesh.tower_telemetry`).
+3. **BigQuery Raw Table**: Houses raw log data partitions (`my_project.telco_mesh.tower_telemetry`).
 4. **BigQuery Continuous Query**: A persistent streaming SQL job that runs stateful evaluations on incoming rows, identifying low-signal anomalies (< -100 dBm) in real-time.
 5. **Google Cloud Pub/Sub Topic**: Ingests anomalies forwarded by BigQuery instantly.
 6. **Autonomous AI Agent / Router**: Listens to the Pub/Sub topic to run active tests, dispatch troubleshooting commands, or orchestrate network repairs.

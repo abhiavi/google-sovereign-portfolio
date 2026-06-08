@@ -70,7 +70,21 @@ sequenceDiagram
 
 Below is the end-to-end system architecture representing this real-time routing pipeline:
 
-![Autonomous Data Mesh Architecture Diagram](architecture_diagram.png)
+```mermaid
+graph TD
+    A[Telco Network Equipment] -->|Continuous Telemetry Logs| B(BigQuery Storage Write API)
+    B -->|Sub-Second Ingestion Buffer| C[(BigQuery Raw Partitioned Table)]
+    C -->|Persistent Streaming Evaluation| D{Stateful Continuous Query SQL}
+    D -->|Filter: Signal Strength < -100 dBm| E[Google Cloud Pub/Sub Topic]
+    E -->|Real-Time Event Push| F[Autonomous AI Agent / Router]
+    F -->|Verify Contracts & Lineage| G[(Active Knowledge Catalog)]
+    F -->|Trigger Immediate Event| H[Cell Tower Automated Reboot API]
+
+    style A fill:#f9f,stroke:#333,stroke-width:2px
+    style D fill:#bbf,stroke:#333,stroke-width:2px
+    style G fill:#bfb,stroke:#333,stroke-width:2px
+    style H fill:#ffb,stroke:#333,stroke-width:2px
+```
 
 
 ### The Continuous SQL Syntax
