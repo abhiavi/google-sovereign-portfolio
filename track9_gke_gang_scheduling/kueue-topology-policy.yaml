@@ -1,0 +1,62 @@
+apiVersion: kueue.x-k8s.io/v1beta1
+kind: ResourceFlavor
+metadata:
+  name: "nvidia-l4-flavor"
+spec:
+  nodeLabels:
+    cloud.google.com/gke-gpu: "nvidia-l4"
+---
+apiVersion: kueue.x-k8s.io/v1beta1
+kind: ClusterQueue
+metadata:
+  name: "agentic-cohort-cluster-queue"
+spec:
+  namespaceSelector: {} # Monitors all namespaces
+  cohort: "agentic-gpu-cohort"
+  resourceGroups:
+  - coveredResources: ["cpu", "memory", "nvidia.com/gpu"]
+    flavors:
+    - name: "nvidia-l4-flavor"
+      resources:
+      - name: "cpu"
+        nominalQuota: "64"
+      - name: "memory"
+        nominalQuota: "256Gi"
+      - name: "nvidia.com/gpu"
+        nominalQuota: "8"
+---
+apiVersion: kueue.x-k8s.io/v1beta1
+kind: LocalQueue
+metadata:
+  name: "agent-swarm-queue"
+  namespace: "agent-workspace"
+spec:
+  clusterQueue: "agentic-cohort-cluster-queue"
+---
+apiVersion: batch/v1
+kind: Job
+metadata:
+  name: "agent-swarm-deployment"
+  namespace: "agent-workspace"
+  labels:
+    kueue.x-k8s.io/queue-name: "agent-swarm-queue"
+spec:
+  parallelism: 5 # Gang-scheduling requirement: requires all 5 agents active
+  completions: 5
+  suspend: true # Suspended initially; Kueue will unsuspend when all resources are available
+  template:
+    spec:
+      containers:
+      - name: agent-runtime
+        image: python:3.12-slim
+        command: ["python3", "-c", "import time; print('Agent active'); time.sleep(5)"]
+        resources:
+          requests:
+            cpu: "2"
+            memory: "8Gi"
+            nvidia.com/gpu: "1"
+          limits:
+            cpu: "2"
+            memory: "8Gi"
+            nvidia.com/gpu: "1"
+      restartPolicy: Never

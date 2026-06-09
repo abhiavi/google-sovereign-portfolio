@@ -1,0 +1,107 @@
+[
+  {
+    "test_case_id": "TC_01_AUTHORIZED_INGRESS_PREDICT",
+    "description": "Authorized AI Agent router requests predictions from the secure network.",
+    "expected": "ALLOW",
+    "actual": "ALLOW",
+    "status": "PASS",
+    "evaluation_detail": {
+      "decision": "ALLOW",
+      "reason": "Authorized Ingress policy match."
+    }
+  },
+  {
+    "test_case_id": "TC_02_UNAUTHORIZED_INGRESS_PUBLIC_IP",
+    "description": "External client attempts to call Predict service from public IP (no access level).",
+    "expected": "DENIED",
+    "actual": "DENIED",
+    "status": "PASS",
+    "evaluation_detail": {
+      "decision": "DENIED",
+      "code": "VPC_SC_INGRESS_VIOLATION",
+      "reason": "Ingress denied: No matching ingress rule allows identity 'user:external_developer@gmail.com' accessing 'aiplatform.googleapis.com/google.cloud.aiplatform.v1.PredictionService.Predict' from source access levels."
+    }
+  },
+  {
+    "test_case_id": "TC_03_AUTHORIZED_EGRESS_ANALYTICS",
+    "description": "Authorized data router exports verified BQ telemetry downstream to shared analytics.",
+    "expected": "ALLOW",
+    "actual": "ALLOW",
+    "status": "PASS",
+    "evaluation_detail": {
+      "decision": "ALLOW",
+      "reason": "Authorized Egress policy match."
+    }
+  },
+  {
+    "test_case_id": "TC_04_UNAUTHORIZED_EGRESS_EXFILTRATION",
+    "description": "Compromised internal identity attempts to copy storage blobs to a malicious public bucket.",
+    "expected": "DENIED",
+    "actual": "DENIED",
+    "status": "PASS",
+    "evaluation_detail": {
+      "decision": "DENIED",
+      "code": "VPC_SC_EGRESS_VIOLATION",
+      "reason": "Egress denied: Exfiltration blocked. Accessing external resource 'projects/malicious_public_bucket' via service 'storage.googleapis.com/google.cloud.storage.v1.Objects.Insert' is not permitted by egress policies."
+    }
+  },
+  {
+    "test_case_id": "TC_05_NESTED_EXFILTRATION_CLOUDBUILD",
+    "description": "Insider threat uses a Cloud Build job running inside the perimeter to write to an unauthorized external storage bucket.",
+    "expected": "DENIED",
+    "actual": "DENIED",
+    "status": "PASS",
+    "evaluation_detail": {
+      "decision": "DENIED",
+      "code": "VPC_SC_EGRESS_VIOLATION",
+      "reason": "Egress denied: Exfiltration blocked. Accessing external resource 'projects/malicious_public_bucket' via service 'storage.googleapis.com/google.cloud.storage.v1.Objects.Insert' is not permitted by egress policies."
+    }
+  },
+  {
+    "test_case_id": "TC_06_UNAUTHORIZED_CLOUDBUILD_EXTERNAL_EGRESS",
+    "description": "Insider threat attempts to trigger Cloud Build to run build steps that egress to an external IP/project.",
+    "expected": "DENIED",
+    "actual": "DENIED",
+    "status": "PASS",
+    "evaluation_detail": {
+      "decision": "DENIED",
+      "code": "VPC_SC_EGRESS_VIOLATION",
+      "reason": "Egress denied: Exfiltration blocked. Accessing external resource 'projects/external_malicious_infrastructure' via service 'cloudbuild.googleapis.com/google.devtools.cloudbuild.v1.CreateBuild' is not permitted by egress policies."
+    }
+  },
+  {
+    "test_case_id": "TC_07_AUTHORIZED_B2B_BRIDGE_INGRESS",
+    "description": "Authorized external vendor accesses BigQuery dataset from trusted network location.",
+    "expected": "ALLOW",
+    "actual": "ALLOW",
+    "status": "PASS",
+    "evaluation_detail": {
+      "decision": "ALLOW",
+      "reason": "Authorized Ingress policy match."
+    }
+  },
+  {
+    "test_case_id": "TC_08_UNAUTHORIZED_B2B_BRIDGE_UNTRUSTED_SOURCE",
+    "description": "External vendor SA attempts to access BigQuery dataset from untrusted public IP (no trusted access level).",
+    "expected": "DENIED",
+    "actual": "DENIED",
+    "status": "PASS",
+    "evaluation_detail": {
+      "decision": "DENIED",
+      "code": "VPC_SC_INGRESS_VIOLATION",
+      "reason": "Ingress denied: No matching ingress rule allows identity 'serviceAccount:vendor-analyst-sa@external-consulting-firm.iam.gserviceaccount.com' accessing 'bigquery.googleapis.com/google.cloud.bigquery.v2.TableService.GetData' from source access levels."
+    }
+  },
+  {
+    "test_case_id": "TC_09_UNAUTHORIZED_B2B_BRIDGE_UNRESTRICTED_API",
+    "description": "External vendor SA attempts to access Vertex AI prediction APIs (unauthorized service).",
+    "expected": "DENIED",
+    "actual": "DENIED",
+    "status": "PASS",
+    "evaluation_detail": {
+      "decision": "DENIED",
+      "code": "VPC_SC_INGRESS_VIOLATION",
+      "reason": "Ingress denied: No matching ingress rule allows identity 'serviceAccount:vendor-analyst-sa@external-consulting-firm.iam.gserviceaccount.com' accessing 'aiplatform.googleapis.com/google.cloud.aiplatform.v1.PredictionService.Predict' from source access levels."
+    }
+  }
+]

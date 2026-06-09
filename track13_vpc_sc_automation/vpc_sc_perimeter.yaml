@@ -1,0 +1,61 @@
+# Sovereign VPC Service Controls Perimeter Definition
+service_perimeter:
+  name: "accessPolicies/123456789/servicePerimeters/sp_sovereign_telco_perimeter"
+  title: "Sovereign Telco Service Perimeter"
+  description: "Protects analytical and model inference interfaces from exfiltration."
+  resources:
+    - "projects/my_project"
+  restricted_services:
+    - "storage.googleapis.com"
+    - "bigquery.googleapis.com"
+    - "aiplatform.googleapis.com"
+    - "cloudbuild.googleapis.com"
+  access_levels:
+    - "accessPolicies/123456789/accessLevels/al_secure_operator_network"
+    - "accessPolicies/123456789/accessLevels/al_vendor_trusted_network"
+  
+  # Ingress Policies define who can access resources inside the perimeter from outside
+  ingress_policies:
+    # Rule 1: Secure operator network predictions access
+    - ingress_from:
+        identities:
+          - "serviceAccount:ai-agent-router@my_project.iam.gserviceaccount.com"
+        sources:
+          - access_level: "accessPolicies/123456789/accessLevels/al_secure_operator_network"
+      ingress_to:
+        operations:
+          - service_name: "aiplatform.googleapis.com"
+            method_selectors:
+              - method: "google.cloud.aiplatform.v1.PredictionService.Predict"
+              - method: "google.cloud.aiplatform.v1.EndpointService.Predict"
+        resources:
+          - "projects/my_project"
+
+    # Rule 2: B2B Perimeter Bridge - External vendor access to specific BQ dataset/operations
+    - ingress_from:
+        identities:
+          - "serviceAccount:vendor-analyst-sa@external-consulting-firm.iam.gserviceaccount.com"
+        sources:
+          - access_level: "accessPolicies/123456789/accessLevels/al_vendor_trusted_network"
+      ingress_to:
+        operations:
+          - service_name: "bigquery.googleapis.com"
+            method_selectors:
+              - method: "google.cloud.bigquery.v2.TableService.GetData"
+              - method: "google.cloud.bigquery.v2.TableService.ListTables"
+        resources:
+          - "projects/my_project"
+
+  # Egress Policies define what secure resources inside the perimeter can call outside
+  egress_policies:
+    - egress_from:
+        identities:
+          - "serviceAccount:ai-agent-router@my_project.iam.gserviceaccount.com"
+      egress_to:
+        operations:
+          - service_name: "bigquery.googleapis.com"
+            method_selectors:
+              - method: "google.cloud.bigquery.v2.JobService.InsertJob"
+              - method: "google.cloud.bigquery.v2.TableService.GetData"
+        resources:
+          - "projects/external_shared_analytics"

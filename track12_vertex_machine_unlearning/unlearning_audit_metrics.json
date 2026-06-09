@@ -1,0 +1,25 @@
+{
+  "dataset_size": 100000,
+  "forget_cohort_size": 500,
+  "original_accuracy_remain": 99.13467336683416,
+  "retrained_accuracy_remain": 99.13969849246232,
+  "unlearned_accuracy_remain": 98.72964824120602,
+  "dp_unlearned_accuracy_remain": 93.27437185929648,
+  "original_accuracy_forget": 99.0,
+  "retrained_accuracy_forget": 99.0,
+  "unlearned_accuracy_forget": 97.39999999999999,
+  "dp_unlearned_accuracy_forget": 93.8,
+  "l2_distance_original_to_retrained": 1.1942744255065918,
+  "l2_distance_unlearned_to_retrained": 1.2151427268981934,
+  "l2_distance_dp_unlearned_to_retrained": 5.6061248779296875,
+  "catastrophic_forgetting_standard": 0.40502512562814275,
+  "catastrophic_forgetting_dp": 5.8603015075376845,
+  "dp_metrics": {
+    "epsilon": 1.0,
+    "delta": 1e-05,
+    "clip_norm": 0.05,
+    "raw_norm": 0.13386580348014832,
+    "noise_sigma": 0.24224026313026947,
+    "clipped": true
+  }
+}

@@ -1,0 +1,31 @@
+{
+  "name": "pubsub-reverse-etl-sink-connector",
+  "config": {
+    "connector.class": "com.google.pubsub.kafka.sink.CloudPubSubSinkConnector",
+    "tasks.max": "5",
+    "topics": "analytical_state_changes, semantic_enrichments, ML_inferences",
+    "cps.project": "telco_mesh_project",
+    "cps.topic": "operational_engine_sync",
+    "cps.endpoint": "pubsub.googleapis.com",
+    "key.converter": "org.apache.kafka.connect.storage.StringConverter",
+    "value.converter": "org.apache.kafka.connect.json.JsonConverter",
+    "value.converter.schemas.enable": "false",
+    "maxBufferSize": "100",
+    "maxBufferBytes": "10485760",
+    "maxDelayThresholdMs": "50",
+    "message.ordering.enabled": "true",
+    "ordering.key.source": "key",
+    "gcp.credentials.file": "/etc/kafka/secrets/gcp-credentials.json",
+    "errors.tolerance": "all",
+    "errors.deadletterqueue.topic.name": "dlq_reverse_etl_errors",
+    "errors.deadletterqueue.context.headers.enable": "true",
+    "transforms": "ExtractField,InsertSource",
+    "transforms.ExtractField.type": "org.apache.kafka.connect.transforms.ExtractField$Value",
+    "transforms.ExtractField.field": "payload",
+    "transforms.InsertSource.type": "org.apache.kafka.connect.transforms.InsertField$Value",
+    "transforms.InsertSource.static.field": "source_system",
+    "transforms.InsertSource.static.value": "confluent_reverse_etl",
+    "consumer.override.isolation.level": "read_committed",
+    "exactly.once.support": "requested"
+  }
+}
