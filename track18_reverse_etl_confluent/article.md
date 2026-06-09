@@ -2,7 +2,10 @@
 **Enterprise Architecture Deep-Dive & Resiliency Audit**
 
 ### Phase 1: The Enterprise Bottleneck (Executive Summary)
-Reverse ETL synchronizing analytical predictions back to CRM platforms requires exactly-once semantics to prevent duplicate actions. During high-throughput bursts, data anomalies are routed to a Dead-Letter Queue (DLQ). However, a systemic upstream failure can overflow the DLQ, triggering broker I/O bottlenecks that crash Connect worker nodes.
+Reverse ETL synchronizing analytical predictions back to CRM platforms requires exactly-once semantics to prevent duplicate actions. Kafka exactly-once semantics break when hitting Google Cloud Pub/Sub's at-least-once delivery guarantees. During high-throughput bursts, anomalies are routed to a DLQ, but duplicates can still seep through.
+
+### Architecture Update: Idempotent Deduplication
+To guarantee true end-to-end exactly-once execution, we introduced an idempotent deduplication layer using a Redis cache explicitly on the final CRM ingestion worker. This filters out the duplicates inherent in the Pub/Sub boundary.
 
 ### Phase 2: The Core Architecture
 ```mermaid

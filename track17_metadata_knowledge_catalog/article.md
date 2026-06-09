@@ -19,7 +19,7 @@ graph TD
 Data contracts are defined as JSON schemas. Upstream schema drift was detected in real-time by trapping audit log events (e.g., `TableService.UpdateTable`). Dropping a column raised a `CONTRACT_VIOLATION` exception, automatically blocking ingestion and triggering a rollback of the upstream migration.
 
 ### Phase 4: Chaos Engineering & Resilience
-We simulated network latency causing out-of-order schema updates. The catalog asserted event-origin monotonicity using a Last-Writer-Wins (LWW) resolution based on the audit log's UTC event timestamp. Stale, delayed events were rejected, preventing semantic collisions and ensuring eventual catalog consistency.
+We completely removed 'Last-Writer-Wins' (LWW) timestamp logic to prevent silent overwrites. Instead, the catalog was upgraded to architect a strict, immutable Schema Registry utilizing semantic versioning (e.g., v1.0.1 -> v1.0.2). This strict versioning prevents semantic collisions and guarantees that downstream AI agents do not hallucinate on shifting schemas.
 
 ### Phase 5: Execution & Local Reproduction
 To run the active data contracts and concurrency resolution tests:

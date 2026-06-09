@@ -33,9 +33,9 @@ CREATE TABLE IF NOT EXISTS operational_engines.tower_telemetry_history (
     threat_embedding vector(768)
 ) PARTITION BY RANGE (event_timestamp);
 
--- Create an HNSW index for fast vector similarity search
+-- Create a ScaNN index for fast vector similarity search (Google proprietary, low write amplification)
 CREATE INDEX ON operational_engines.tower_telemetry_history 
-USING hnsw (threat_embedding vector_cosine_ops);
+USING scann (threat_embedding vector_cosine_ops);
 
 -- 4. Create Active Partitions
 CREATE TABLE IF NOT EXISTS operational_engines.telemetry_y2026m06 PARTITION OF operational_engines.tower_telemetry_history

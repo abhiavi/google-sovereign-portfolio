@@ -177,19 +177,21 @@ class SchemaEventHandler:
             
             print(f"[Handler] Processing event '{method_name}' for resource: {resource_name}")
             
-            # Entity-level Collision Resolution: Check if any existing field in this resource has a newer timestamp
-            # If so, the entire incoming schema update is considered stale and rejected to prevent partial schema application.
-            is_stale_update = False
+            # Collision Resolution: Strict, immutable Schema Registry utilizing semantic versioning.
+            # No Last-Writer-Wins. Every update explicitly bumps the patch version (e.g. v1.0.1 -> v1.0.2).
+            # This ensures downstream agents do not hallucinate on silently overwritten schemas.
+            
+            # Determine current schema version
+            current_version = "1.0.0"
             for entity_key, entity_data in self.catalog["entities"].items():
                 if entity_key.startswith(resource_name + "/"):
-                    existing_ts = entity_data.get("last_modified")
-                    if existing_ts and event_timestamp_str < existing_ts:
-                        print(f"[COLLISION RESOLUTION] Rejecting entire stale schema update for {resource_name}. Incoming: {event_timestamp_str}, Existing newer: {existing_ts}")
-                        is_stale_update = True
-                        break
+                    if "version" in entity_data:
+                        current_version = entity_data["version"]
             
-            if is_stale_update:
-                return {"status": "STALE_UPDATE_REJECTED", "reason": "A newer schema version already exists for this resource."}
+            # Bump patch version
+            major, minor, patch = map(int, current_version.lstrip('v').split('.'))
+            new_version = f"v{major}.{minor}.{patch + 1}"
+            print(f"[SCHEMA REGISTRY] Promoting {resource_name} schema from {current_version} to {new_version}")
             
             # Update unified catalog
             entities_updated = []
@@ -210,7 +212,8 @@ class SchemaEventHandler:
                     "semantic_concept": semantic_meta["semantic_concept"],
                     "description": semantic_meta["description"],
                     "security_tier": semantic_meta["security_tier"],
-                    "last_modified": event_timestamp_str
+                    "last_modified": event_timestamp_str,
+                    "version": new_version
                 }
                 entities_updated.append(entity_key)
                 

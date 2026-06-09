@@ -24,7 +24,7 @@ _sym_db = _symbol_database.Default()
 
 
 
-DESCRIPTOR = _descriptor_pool.Default().AddSerializedFile(b'\n\x11\x61gent_state.proto\x12\x08\x61\x64k_mesh\"T\n\nTokenUsage\x12\x15\n\rprompt_tokens\x18\x01 \x01(\x05\x12\x19\n\x11\x63ompletion_tokens\x18\x02 \x01(\x05\x12\x14\n\x0ctotal_tokens\x18\x03 \x01(\x05\")\n\x0bMemoryEntry\x12\x0c\n\x04role\x18\x01 \x01(\t\x12\x0c\n\x04text\x18\x02 \x01(\t\"t\n\x0eTensorMetadata\x12\x0e\n\x06layers\x18\x01 \x01(\x05\x12\r\n\x05heads\x18\x02 \x01(\x05\x12\x10\n\x08head_dim\x18\x03 \x01(\x05\x12\x18\n\x10kv_cache_address\x18\x04 \x01(\t\x12\x17\n\x0f\x62ytes_allocated\x18\x05 \x01(\x03\"\xab\x02\n\x11\x41gentStatePayload\x12\x12\n\nsession_id\x18\x01 \x01(\t\x12\x12\n\nagent_role\x18\x02 \x01(\t\x12\x12\n\nturn_index\x18\x03 \x01(\x05\x12)\n\x0btoken_usage\x18\x04 \x01(\x0b\x32\x14.adk_mesh.TokenUsage\x12\x1a\n\x12\x61\x63tive_constraints\x18\x05 \x03(\t\x12\x34\n\x15\x63onversational_memory\x18\x06 \x03(\x0b\x32\x15.adk_mesh.MemoryEntry\x12\x31\n\x0ftensor_metadata\x18\x07 \x01(\x0b\x32\x18.adk_mesh.TensorMetadata\x12\x13\n\x0b\x63hunk_index\x18\x08 \x01(\x05\x12\x15\n\ris_last_chunk\x18\t \x01(\x08\"W\n\x0eTransferStatus\x12\x16\n\x0estatus_message\x18\x01 \x01(\t\x12\x0f\n\x07success\x18\x02 \x01(\x08\x12\x1c\n\x14last_processed_chunk\x18\x03 \x01(\x05\"\'\n\x11\x43heckpointRequest\x12\x12\n\nsession_id\x18\x01 \x01(\t\"J\n\x12\x43heckpointResponse\x12\x1c\n\x14last_processed_chunk\x18\x01 \x01(\x05\x12\x16\n\x0esession_exists\x18\x02 \x01(\x08\"`\n\x0bVoteRequest\x12\x0c\n\x04term\x18\x01 \x01(\x05\x12\x14\n\x0c\x63\x61ndidate_id\x18\x02 \x01(\t\x12\x16\n\x0elast_log_index\x18\x03 \x01(\x05\x12\x15\n\rlast_log_term\x18\x04 \x01(\x05\"2\n\x0cVoteResponse\x12\x0c\n\x04term\x18\x01 \x01(\x05\x12\x14\n\x0cvote_granted\x18\x02 \x01(\x08\"7\n\x08LogEntry\x12\x0c\n\x04term\x18\x01 \x01(\x05\x12\x0f\n\x07\x63ommand\x18\x02 \x01(\t\x12\x0c\n\x04\x64\x61ta\x18\x03 \x01(\t\"\xa2\x01\n\x14\x41ppendEntriesRequest\x12\x0c\n\x04term\x18\x01 \x01(\x05\x12\x11\n\tleader_id\x18\x02 \x01(\t\x12\x16\n\x0eprev_log_index\x18\x03 \x01(\x05\x12\x15\n\rprev_log_term\x18\x04 \x01(\x05\x12#\n\x07\x65ntries\x18\x05 \x03(\x0b\x32\x12.adk_mesh.LogEntry\x12\x15\n\rleader_commit\x18\x06 \x01(\x05\"K\n\x15\x41ppendEntriesResponse\x12\x0c\n\x04term\x18\x01 \x01(\x05\x12\x0f\n\x07success\x18\x02 \x01(\x08\x12\x13\n\x0bmatch_index\x18\x03 \x01(\x05\x32\xa9\x01\n\x11\x41gentStateService\x12H\n\rTransferState\x12\x1b.adk_mesh.AgentStatePayload\x1a\x18.adk_mesh.TransferStatus(\x01\x12J\n\rGetCheckpoint\x12\x1b.adk_mesh.CheckpointRequest\x1a\x1c.adk_mesh.CheckpointResponse2\x9d\x01\n\x0bRaftService\x12<\n\x0bRequestVote\x12\x15.adk_mesh.VoteRequest\x1a\x16.adk_mesh.VoteResponse\x12P\n\rAppendEntries\x12\x1e.adk_mesh.AppendEntriesRequest\x1a\x1f.adk_mesh.AppendEntriesResponseb\x06proto3')
+DESCRIPTOR = _descriptor_pool.Default().AddSerializedFile(b'\n\x11\x61gent_state.proto\x12\x08\x61\x64k_mesh\"T\n\nTokenUsage\x12\x15\n\rprompt_tokens\x18\x01 \x01(\x05\x12\x19\n\x11\x63ompletion_tokens\x18\x02 \x01(\x05\x12\x14\n\x0ctotal_tokens\x18\x03 \x01(\x05\")\n\x0bMemoryEntry\x12\x0c\n\x04role\x18\x01 \x01(\t\x12\x0c\n\x04text\x18\x02 \x01(\t\"t\n\x0eTensorMetadata\x12\x0e\n\x06layers\x18\x01 \x01(\x05\x12\r\n\x05heads\x18\x02 \x01(\x05\x12\x10\n\x08head_dim\x18\x03 \x01(\x05\x12\x18\n\x10kv_cache_address\x18\x04 \x01(\t\x12\x17\n\x0f\x62ytes_allocated\x18\x05 \x01(\x03\"\xab\x02\n\x11\x41gentStatePayload\x12\x12\n\nsession_id\x18\x01 \x01(\t\x12\x12\n\nagent_role\x18\x02 \x01(\t\x12\x12\n\nturn_index\x18\x03 \x01(\x05\x12)\n\x0btoken_usage\x18\x04 \x01(\x0b\x32\x14.adk_mesh.TokenUsage\x12\x1a\n\x12\x61\x63tive_constraints\x18\x05 \x03(\t\x12\x34\n\x15\x63onversational_memory\x18\x06 \x03(\x0b\x32\x15.adk_mesh.MemoryEntry\x12\x31\n\x0ftensor_metadata\x18\x07 \x01(\x0b\x32\x18.adk_mesh.TensorMetadata\x12\x13\n\x0b\x63hunk_index\x18\x08 \x01(\x05\x12\x15\n\ris_last_chunk\x18\t \x01(\x08\"W\n\x0eTransferStatus\x12\x16\n\x0estatus_message\x18\x01 \x01(\t\x12\x0f\n\x07success\x18\x02 \x01(\x08\x12\x1c\n\x14last_processed_chunk\x18\x03 \x01(\x05\"\'\n\x11\x43heckpointRequest\x12\x12\n\nsession_id\x18\x01 \x01(\t\"J\n\x12\x43heckpointResponse\x12\x1c\n\x14last_processed_chunk\x18\x01 \x01(\x05\x12\x16\n\x0esession_exists\x18\x02 \x01(\x08\x32\xa9\x01\n\x11\x41gentStateService\x12H\n\rTransferState\x12\x1b.adk_mesh.AgentStatePayload\x1a\x18.adk_mesh.TransferStatus(\x01\x12J\n\rGetCheckpoint\x12\x1b.adk_mesh.CheckpointRequest\x1a\x1c.adk_mesh.CheckpointResponseb\x06proto3')
 
 _globals = globals()
 _builder.BuildMessageAndEnumDescriptors(DESCRIPTOR, _globals)
@@ -45,18 +45,6 @@ if not _descriptor._USE_C_DESCRIPTORS:
   _globals['_CHECKPOINTREQUEST']._serialized_end=708
   _globals['_CHECKPOINTRESPONSE']._serialized_start=710
   _globals['_CHECKPOINTRESPONSE']._serialized_end=784
-  _globals['_VOTEREQUEST']._serialized_start=786
-  _globals['_VOTEREQUEST']._serialized_end=882
-  _globals['_VOTERESPONSE']._serialized_start=884
-  _globals['_VOTERESPONSE']._serialized_end=934
-  _globals['_LOGENTRY']._serialized_start=936
-  _globals['_LOGENTRY']._serialized_end=991
-  _globals['_APPENDENTRIESREQUEST']._serialized_start=994
-  _globals['_APPENDENTRIESREQUEST']._serialized_end=1156
-  _globals['_APPENDENTRIESRESPONSE']._serialized_start=1158
-  _globals['_APPENDENTRIESRESPONSE']._serialized_end=1233
-  _globals['_AGENTSTATESERVICE']._serialized_start=1236
-  _globals['_AGENTSTATESERVICE']._serialized_end=1405
-  _globals['_RAFTSERVICE']._serialized_start=1408
-  _globals['_RAFTSERVICE']._serialized_end=1565
+  _globals['_AGENTSTATESERVICE']._serialized_start=787
+  _globals['_AGENTSTATESERVICE']._serialized_end=956
 # @@protoc_insertion_point(module_scope)

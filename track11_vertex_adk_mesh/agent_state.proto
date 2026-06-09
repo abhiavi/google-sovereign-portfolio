@@ -36,7 +36,7 @@ message AgentStatePayload {
 message TransferStatus {
     string status_message = 1;
     bool success = 2;
-    int32 last_processed_chunk = 3; // For checkpointing and recovery
+    int32 last_processed_chunk = 3;
 }
 
 message CheckpointRequest {
@@ -48,46 +48,7 @@ message CheckpointResponse {
     bool session_exists = 2;
 }
 
-// Raft Consensus Messages for Track 11 split-brain recovery
-message VoteRequest {
-    int32 term = 1;
-    string candidate_id = 2;
-    int32 last_log_index = 3;
-    int32 last_log_term = 4;
-}
-
-message VoteResponse {
-    int32 term = 1;
-    bool vote_granted = 2;
-}
-
-message LogEntry {
-    int32 term = 1;
-    string command = 2;
-    string data = 3;
-}
-
-message AppendEntriesRequest {
-    int32 term = 1;
-    string leader_id = 2;
-    int32 prev_log_index = 3;
-    int32 prev_log_term = 4;
-    repeated LogEntry entries = 5;
-    int32 leader_commit = 6;
-}
-
-message AppendEntriesResponse {
-    int32 term = 1;
-    bool success = 2;
-    int32 match_index = 3;
-}
-
 service AgentStateService {
     rpc TransferState(stream AgentStatePayload) returns (TransferStatus);
     rpc GetCheckpoint(CheckpointRequest) returns (CheckpointResponse);
-}
-
-service RaftService {
-    rpc RequestVote(VoteRequest) returns (VoteResponse);
-    rpc AppendEntries(AppendEntriesRequest) returns (AppendEntriesResponse);
 }

@@ -1,4 +1,4 @@
-# sidecar_proxy.py - mTLS Encrypted gRPC Sidecar Proxy & Serialization Helpers
+# sidecar_proxy.py - mTLS Stateless gRPC Sidecar Proxy with Cloud Spanner persistence
 import os
 import random
 import time
@@ -8,6 +8,41 @@ import grpc
 
 import agent_state_pb2
 import agent_state_pb2_grpc
+
+# Global Mock Cloud Spanner Database (highly available, multi-region cluster)
+class MockSpannerDatabase:
+    def __init__(self):
+        self.tables = {} # table_name -> key_value_store
+        self.checkpoints = {} # session_id -> last_chunk_index
+        # Node connectivity to Spanner: maps node_port -> boolean
+        self.connectivity = {}
+
+    def is_node_connected(self, port: int) -> bool:
+        return self.connectivity.get(port, True)
+
+    def write_state(self, node_port: int, session_id: str, data: Dict[str, Any], last_chunk: int):
+        if not self.is_node_connected(node_port):
+            raise RuntimeError("Cloud Spanner database cluster is unreachable from this compute node.")
+        
+        # Simulate transactional write in Spanner
+        time.sleep(0.005) # Spanner multi-region write latency (~5ms)
+        self.tables[session_id] = data
+        self.checkpoints[session_id] = last_chunk
+
+    def read_state(self, node_port: int, session_id: str) -> Dict[str, Any]:
+        if not self.is_node_connected(node_port):
+            raise RuntimeError("Cloud Spanner database cluster is unreachable from this compute node.")
+        return self.tables.get(session_id, None)
+
+    def get_checkpoint(self, node_port: int, session_id: str) -> int:
+        if not self.is_node_connected(node_port):
+            raise RuntimeError("Cloud Spanner database cluster is unreachable from this compute node.")
+        return self.checkpoints.get(session_id, -1)
+
+
+# Singleton Spanner instance
+SPANNER_DB = MockSpannerDatabase()
+
 
 # Serialization mapping helpers
 def dict_to_proto(data: Dict[str, Any], chunk_index: int = 0, is_last_chunk: bool = True) -> agent_state_pb2.AgentStatePayload:
@@ -89,57 +124,55 @@ class AgentStateServiceServicer(agent_state_pb2_grpc.AgentStateServiceServicer):
     def TransferState(self, request_iterator, context):
         last_processed = -1
         session_id = None
+        buffered_payload = None
         
         try:
             for request in request_iterator:
                 session_id = request.session_id
                 chunk_idx = request.chunk_index
                 
-                # Network simulation
-                if self.server.simulate_network_issues:
-                    # 1. 5% packet loss check
+                # Dynamic network drop simulation (for packet loss test)
+                if self.server.simulate_packet_loss:
                     if random.random() < 0.05:
-                        print(f"[SERVER] [LOSS] Packet loss simulated on chunk {chunk_idx}.")
-                        context.abort(grpc.StatusCode.UNAVAILABLE, f"Packet loss simulated on chunk {chunk_idx}")
-                        
-                    # 2. Network partition simulation at chunk 5
-                    if chunk_idx == 5 and not self.server.partition_triggered:
-                        self.server.partition_triggered = True
-                        print(f"[SERVER] [PARTITION] Network partition triggered on chunk {chunk_idx}.")
-                        context.abort(grpc.StatusCode.ABORTED, "Network partition triggered")
+                        print(f"[SERVER:{self.server.port}] [LOSS] Simulating random packet loss on chunk {chunk_idx}.")
+                        context.abort(grpc.StatusCode.UNAVAILABLE, "Random packet loss occurred.")
                 
-                # Update checkpoint
+                # Buffer the dict payload
+                buffered_payload = proto_to_dict(request)
                 last_processed = chunk_idx
-                self.server.checkpoints[session_id] = last_processed
                 
+                # Write to Cloud Spanner only when the last chunk is successfully received (guarantees transaction boundary)
                 if request.is_last_chunk:
-                    return agent_state_pb2.TransferStatus(
-                        status_message="State transfer completed successfully.",
-                        success=True,
-                        last_processed_chunk=last_processed
-                    )
+                    try:
+                        SPANNER_DB.write_state(self.server.port, session_id, buffered_payload, last_processed)
+                        return agent_state_pb2.TransferStatus(
+                            status_message="State successfully written to Cloud Spanner.",
+                            success=True,
+                            last_processed_chunk=last_processed
+                        )
+                    except RuntimeError as e:
+                        print(f"[SERVER:{self.server.port}] [DB_ERROR] Spanner transaction aborted: {str(e)}")
+                        context.abort(grpc.StatusCode.ABORTED, str(e))
+                        
         except grpc.RpcError as e:
-            # Re-raise to client
             raise e
             
         return agent_state_pb2.TransferStatus(
-            status_message="Stream ended prematurely.",
+            status_message="Stream interrupted before completion.",
             success=False,
             last_processed_chunk=last_processed
         )
 
     def GetCheckpoint(self, request, context):
         session_id = request.session_id
-        if session_id in self.server.checkpoints:
+        try:
+            chk = SPANNER_DB.get_checkpoint(self.server.port, session_id)
             return agent_state_pb2.CheckpointResponse(
-                last_processed_chunk=self.server.checkpoints[session_id],
-                session_exists=True
+                last_processed_chunk=chk,
+                session_exists=(chk != -1)
             )
-        else:
-            return agent_state_pb2.CheckpointResponse(
-                last_processed_chunk=-1,
-                session_exists=False
-            )
+        except RuntimeError as e:
+            context.abort(grpc.StatusCode.UNAVAILABLE, str(e))
 
 
 class MTLSSidecarServer:
@@ -148,7 +181,6 @@ class MTLSSidecarServer:
         self.port = port
         self.cert_dir = cert_dir
         self.server = None
-        self.checkpoints = {}
         
         # Cert paths
         self.ca_cert = os.path.join(cert_dir, "ca.crt")
@@ -156,11 +188,9 @@ class MTLSSidecarServer:
         self.server_key = os.path.join(cert_dir, "server.key")
         
         # Simulation flags
-        self.simulate_network_issues = False
-        self.partition_triggered = False
+        self.simulate_packet_loss = False
 
     def start(self):
-        # Load cert bytes
         with open(self.ca_cert, "rb") as f:
             ca_cert_bytes = f.read()
         with open(self.server_cert, "rb") as f:
@@ -173,7 +203,6 @@ class MTLSSidecarServer:
             AgentStateServiceServicer(self), self.server
         )
         
-        # Create mTLS credentials
         server_credentials = grpc.ssl_server_credentials(
             [(server_key_bytes, server_cert_bytes)],
             root_certificates=ca_cert_bytes,
@@ -213,15 +242,13 @@ class MTLSSidecarClient:
             certificate_chain=client_cert_bytes
         )
         
-        # Overriding authority is necessary when testing locally with IP addresses
         options = (('grpc.ssl_target_name_override', '127.0.0.1'),)
         return grpc.secure_channel(f"{self.host}:{self.port}", client_credentials, options)
 
-    def send_state_stream(self, data: Dict[str, Any], num_chunks: int, simulate_network_issues: bool = False) -> Tuple[bool, float, int]:
+    def send_state_stream(self, data: Dict[str, Any], num_chunks: int, simulate_packet_loss: bool = False) -> Tuple[bool, float, int]:
         """
-        Sends the agent state payload as a stream of chunks.
-        Implements self-healing retry logic using GetCheckpoint state recovery.
-        Returns: (success, latency_ms, retries_attempted)
+        Streams the agent state payload to the sidecar proxy.
+        Implements self-healing retry logic using Spanner checkpointing.
         """
         session_id = data.get("session_id", "session-unknown")
         start_time = time.perf_counter()
@@ -236,15 +263,12 @@ class MTLSSidecarClient:
         
         while current_chunk < num_chunks and retries <= max_retries:
             try:
-                # Generator for streaming
                 def chunk_generator() -> Generator[agent_state_pb2.AgentStatePayload, None, None]:
                     nonlocal current_chunk
                     for c in range(current_chunk, num_chunks):
                         is_last = (c == num_chunks - 1)
-                        # We simulate state content split by tagging chunk indices
                         yield dict_to_proto(data, chunk_index=c, is_last_chunk=is_last)
                         
-                # Call stream RPC
                 response = stub.TransferState(chunk_generator())
                 if response.success:
                     latency = (time.perf_counter() - start_time) * 1000.0
@@ -253,25 +277,22 @@ class MTLSSidecarClient:
                     
             except grpc.RpcError as e:
                 retries += 1
-                print(f"[CLIENT] [ERROR] gRPC Stream failed at chunk {current_chunk}: {e.details()}. Recovering...")
-                
-                # Wait before checking checkpoint and retrying
+                print(f"[CLIENT] [ERROR] Stream failed at chunk {current_chunk}: {e.details()}. Recovering...")
                 time.sleep(backoff)
                 backoff *= 1.5
                 
-                # Check checkpoint
+                # Check database checkpoint
                 try:
                     checkpoint_response = stub.GetCheckpoint(agent_state_pb2.CheckpointRequest(session_id=session_id))
                     if checkpoint_response.session_exists:
                         server_last = checkpoint_response.last_processed_chunk
-                        print(f"[CLIENT] [RECOVERY] Checkpoint found. Server last processed chunk: {server_last}. Resuming from chunk {server_last + 1}.")
+                        print(f"[CLIENT] [RECOVERY] Checkpoint found in Cloud Spanner. Resuming from chunk {server_last + 1}.")
                         current_chunk = server_last + 1
                     else:
-                        print("[CLIENT] [RECOVERY] No session checkpoint found. Restarting stream from chunk 0.")
+                        print("[CLIENT] [RECOVERY] No session checkpoint found. Restarting from chunk 0.")
                         current_chunk = 0
                 except grpc.RpcError as checkpoint_err:
-                    # Connection is dead, re-establish channel
-                    print(f"[CLIENT] [RECOVERY] Checkpoint RPC failed ({checkpoint_err.details()}). Re-establishing secure channel...")
+                    print(f"[CLIENT] [RECOVERY] Checkpoint fetch failed: {checkpoint_err.details()}. Re-establishing connection...")
                     channel.close()
                     channel = self._get_channel()
                     stub = agent_state_pb2_grpc.AgentStateServiceStub(channel)
