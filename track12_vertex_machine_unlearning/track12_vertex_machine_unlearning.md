@@ -15,9 +15,16 @@ In early machine unlearning literature, researchers attempted to perform "post-h
 
 ### The Influence Function Approximation
 The influence of a training point $z$ on the empirical risk minimizer weights $\theta^*$ is formulated using the inverse Hessian matrix of the loss function:
-$$\mathcal{I}_{\text{up, loss}}(z) = -\nabla_\theta L(z, \theta^*)^T H_{\theta^*}^{-1} \nabla_\theta L(z, \theta^*)$$
+
+$$
+\mathcal{I}_{\text{up, loss}}(z) = -\nabla_\theta L(z, \theta^*)^T H_{\theta^*}^{-1} \nabla_\theta L(z, \theta^*)
+$$
+
 where $H_{\theta^*}$ is the Hessian matrix of the model's loss across the entire training dataset:
-$$H_{\theta^*} = \frac{1}{N} \sum_{i=1}^N \nabla^2_\theta L(z_i, \theta^*)$$
+
+$$
+H_{\theta^*} = \frac{1}{N} \sum_{i=1}^N \nabla^2_\theta L(z_i, \theta^*)
+$$
 
 To perform unlearning, the platform operator calculates $\mathcal{I}_{\text{up, loss}}(z)$ and subtracts this approximate gradient vector from the model weights $\theta^*$. While mathematically elegant, this approach fails in enterprise production environments due to three fatal flaws:
 
@@ -35,7 +42,11 @@ Rather than updating the shared parameters of a large language model, we freeze 
 
 ### The Mathematics of LoRA
 Let $W_0 \in \mathbb{R}^{d \times k}$ represent the frozen weight matrix of a pre-trained base model layer. During adaptation, we constrain the weight update $\Delta W$ by factorizing it into two low-rank matrices, $A$ and $B$:
-$$W = W_0 + \Delta W = W_0 + \frac{\alpha}{r} B A$$
+
+$$
+W = W_0 + \Delta W = W_0 + \frac{\alpha}{r} B A
+$$
+
 where:
 *   $r \ll \min(d, k)$ is the rank of the adaptation (typically $4$ or $8$).
 *   $A \in \mathbb{R}^{r \times k}$ is initialized from a Gaussian distribution $\mathcal{N}(0, \sigma^2)$.
@@ -43,7 +54,10 @@ where:
 *   $\alpha$ is a constant scaling hyperparameter that stabilizes training when varying the rank $r$.
 
 For an input vector $x \in \mathbb{R}^{1 \times k}$, the forward pass calculation is:
-$$y = x W^T = x W_0^T + \frac{\alpha}{r} x A^T B^T$$
+
+$$
+y = x W^T = x W_0^T + \frac{\alpha}{r} x A^T B^T
+$$
 
 ### Cohort Partitioning
 Under the Federated LoRA paradigm, the user database is partitioned into discrete cohorts ($C_1, C_2, \dots, C_M$) based on regulatory boundaries, enterprise client divisions, or geographical namespaces. 
@@ -110,7 +124,7 @@ To validate the architecture, we implemented a 2-layer MLP projection block and 
 The results of the unlearning audit are detailed in the table below:
 
 | Audit Parameter | Pre-Unlearning (Active) | Post-Unlearning (Evicted) | Compliance Standard | Verification Status |
-|:---|:---:|:---:|:---:|:---:|
+ | :--- | :---: | :---: | :---: | :---: |
 | **Cohort 1 Output Vector** | $[0.596, 0.685, 0.732, \dots]$ | $[-0.018, -0.011, -0.010, \dots]$ | $[-0.018, -0.011, -0.010, \dots]$ | **Identical to Base** |
 | **Cohort 1 Memory Trace** | $1.98471203$ | $0.00000000$ | $0.00000000$ | **100.0% Erased** |
 | **Cohort 2 Output Vector** | $[0.000, 0.000, 0.000, \dots]$ | $[0.000, 0.000, 0.000, \dots]$ | $[0.000, 0.000, 0.000, \dots]$ | **Zero Leaks** |

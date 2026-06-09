@@ -25,7 +25,7 @@ Instead, we implement **Federated Cohort LoRA Isolation**. By freezing the base 
 ## Machine Unlearning Audit Telemetry
 
 | Audit Parameter | Compliance Standard | Measured Simulation Value | Compliance Status |
-|:---|:---:|:---:|:---:|
+ | :--- | :---: | :---: | :---: |
 | **Cohort 1 Memory Trace (vs Base)** | $0.00000000$ | **$0.00000000$** | **COMPLIANT** (100% Deletion) |
 | **Cohort 2 Memory Leaking** | $0.00000000$ | **$0.00000000$** | **COMPLIANT** (No Cross-Talk) |
 | **Catastrophic Forgetting Rate** | $0.0\%$ | **$0.0\%$** | **COMPLIANT** (Zero degradation) |

@@ -18,7 +18,7 @@ Welcome to the **Track 9 GKE Sovereign Portfolio** repository. This project addr
 A time-stepped simulation of $10,000$ multi-agent requests yielded the following comparative benchmarks:
 
 | Performance Metric | Default GKE (Greedy Scheduling, No APF) | Sovereign GKE (Kueue Gang Scheduling + APF) | Resiliency Benefit |
-|:---|:---:|:---:|:---:|
+ | :--- | :---: | :---: | :---: |
 | **Control Plane (etcd) Status** | **Crashed** (Heartbeats Timed Out) | **Operational** (100% Uptime) | **Mitigates control plane collapse** |
 | **Completed Workloads** | $0$ | $453$ | **Admitted jobs finish successfully** |
 | **Hold-and-Wait Deadlocks** | $22$ | $24$ | **Eliminates greedy resource lockups** |

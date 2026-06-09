@@ -18,7 +18,11 @@ Standard Kubernetes scheduling evaluates pods individually. In microservices, th
 ### The Hold-and-Wait Deadlock Mechanics
 When scheduling $N$-pod jobs greedily, the scheduler assigns resources to pods as they become available. Let the total cluster GPU capacity be $C$. Consider two parallel multi-agent jobs, $J_1$ and $J_2$, each requiring $R$ GPUs, where $2R > C$ and $R < C$.
 If $J_1$ is partially scheduled with $A_1$ pods ($0 < A_1 < R$) and $J_2$ is partially scheduled with $A_2$ pods ($0 < A_2 < R$), such that:
-$$A_1 + A_2 = C$$
+
+$$
+A_1 + A_2 = C
+$$
+
 Both jobs are stuck. $J_1$ cannot progress because it is missing $R - A_1$ GPUs. $J_2$ cannot progress because it is missing $R - A_2$ GPUs. Because default Kubernetes scheduling does not preempt partially scheduled active pods to free resources, both jobs enter a permanent **Hold-and-Wait Deadlock**. The allocated GPUs ($A_1$ and $A_2$) sit completely idle, leaking compute budget while blocking all queued workloads.
 
 Under a zonal collapse (e.g., Zone C Outage), the situation worsens. When worker nodes in one zone terminate, the pods scheduled on those nodes are deleted. The default scheduler leaves the surviving partner pods in Zone A and B active. These pods act as **zombies**—they run indefinitely, consuming GPU allocations, waiting for the lost pods to reconnect, and permanently halting the cluster queue.
@@ -35,7 +39,11 @@ A sudden traffic burst of $10,000$ concurrent job requests creates an API-server
 Under a $10,000$-job spike:
 1.  **Queue Accumulation**: The API server sends a deluge of concurrent `POST` and `PUT` requests to the etcd client. The etcd write queue (pending Raft proposals) balloons.
 2.  **Non-Linear Latency Inflation**: As the write queue length ($Q$) increases, disk contention and log serialization delay grow non-linearly. The latency ($L$) of etcd write operations can be modeled as:
-    $$L = L_{\text{base}} \times (1 + \alpha \cdot Q^{1.85})$$
+
+$$
+L = L_{\text{base}} \times (1 + \alpha \cdot Q^{1.85})
+$$
+
     Under a 10k-job burst, $L$ spikes from a nominal $2\text{ ms}$ to over $5,000\text{ ms}$ (5 seconds).
 3.  **Lease Renewal Failures**: GKE nodes periodically send lease updates (heartbeats) to the API server to prove their health. These heartbeats are committed to etcd with a strict timeout (typically 5s). If the write latency exceeds this timeout, node leases expire.
 4.  **Cascading Master Failure**: The API server marks healthy nodes as `NotReady` and attempts to reschedule all pods hosted on them. This generates thousands of *additional* pod eviction and deletion writes, compounding the etcd queue length. Simultaneously, the etcd nodes fail to replicate internal peer heartbeats, triggering etcd leader election loops, database lockups, and GKE control plane crashes (HTTP 504/503 errors).
@@ -168,7 +176,7 @@ To validate the architecture, we executed a high-fidelity, discrete-event simula
 The performance metrics captured in the simulation run are outlined below:
 
 | Metric / Parameter | Default GKE (Greedy Scheduling, No APF) | Sovereign GKE (Kueue Gang Scheduling + APF) | Resilience / Recovery Benefit |
-|:---|:---:|:---:|:---:|
+ | :--- | :---: | :---: | :---: |
 | **Total Jobs Admitted** | $22$ | $453$ | **Workloads throttled under capacity limits** |
 | **Jobs Completed Successfully** | $0$ | $453$ | **100% completion rate for admitted jobs** |
 | **Jobs Deadlocked / Hung** | $22$ | $24$ | **Deadlocks eliminated via co-scheduling** |

@@ -17,7 +17,10 @@ This whitepaper details the engineering mechanics of this architecture, provides
 ## 1. The Death of Last-Writer-Wins (LWW)
 
 In distributed databases like BigQuery or Cloud Spanner, the catalog schema metadata $\mathcal{S}$ is mutable. When multiple clients $C_1, C_2, \dots, C_n$ write to a table with schemas $\mathcal{S}_1, \mathcal{S}_2, \dots, S_n$, an LWW policy updates the global schema to the latest write's structure:
-$$\mathcal{S}_{\text{global}}^{(t)} = \mathcal{S}_k \quad \text{where } C_k \text{ is the last writer at timestamp } t$$
+
+$$
+\mathcal{S}_{\text{global}}^{(t)} = \mathcal{S}_k \quad \text{where } C_k \text{ is the last writer at timestamp } t
+$$
 
 If $S_k$ is incompatible with previous schemas, the write will either corrupt existing data columns or break read-side queries.
 
@@ -36,7 +39,10 @@ In this scenario, Producer C2 (running a legacy container) writes to the table a
 The remedy is to make schema records **immutable** and bind them to **Semantic Versioning (SemVer)** rules.
 
 A schema version is represented as:
-$$\text{Version} = \text{MAJOR}.\text{MINOR}.\text{PATCH}$$
+
+$$
+\text{Version} = \text{MAJOR}.\text{MINOR}.\text{PATCH}
+$$
 
 *   **PATCH (Additive/Safe)**: Incremented for backward-compatible bug fixes or minor descriptions that do not alter the column structures.
 *   **MINOR (Additive/Safe)**: Incremented when new, nullable, or optional columns are added. Existing readers can read the new schema, and new readers can fall back to nulls for old records.
@@ -90,13 +96,21 @@ To validate schema evolution, the registry enforces compatibility checks when a 
 ### 4.1 Backward Compatibility (Read Compatibility)
 A new schema $\mathcal{S}_{\text{new}}$ is backward compatible with $\mathcal{S}_{\text{old}}$ if all payloads valid under $\mathcal{S}_{\text{old}}$ are also valid under $\mathcal{S}_{\text{new}}$. 
 This allows us to update the schema first, and update producers later.
-$$\text{Valid}(\mathcal{D}, \mathcal{S}_{\text{old}}) \implies \text{Valid}(\mathcal{D}, \mathcal{S}_{\text{new}}) \quad \forall \text{ datasets } \mathcal{D}$$
+
+$$
+\text{Valid}(\mathcal{D}, \mathcal{S}_{\text{old}}) \implies \text{Valid}(\mathcal{D}, \mathcal{S}_{\text{new}}) \quad \forall \text{ datasets } \mathcal{D}
+$$
+
 This is achieved by ensuring that any new fields added in $\mathcal{S}_{\text{new}}$ are **optional** or have **default values**.
 
 ### 4.2 Forward Compatibility (Write Compatibility)
 A new schema $\mathcal{S}_{\text{new}}$ is forward compatible with $\mathcal{S}_{\text{old}}$ if all payloads valid under $\mathcal{S}_{\text{new}}$ are also valid under $\mathcal{S}_{\text{old}}$. 
 This allows us to update producers first, and update the schema later.
-$$\text{Valid}(\mathcal{D}, \mathcal{S}_{\text{new}}) \implies \text{Valid}(\mathcal{D}, \mathcal{S}_{\text{old}}) \quad \forall \text{ datasets } \mathcal{D}$$
+
+$$
+\text{Valid}(\mathcal{D}, \mathcal{S}_{\text{new}}) \implies \text{Valid}(\mathcal{D}, \mathcal{S}_{\text{old}}) \quad \forall \text{ datasets } \mathcal{D}
+$$
+
 This is achieved by ensuring that no existing fields are deleted or renamed, and their data types remain identical.
 
 ---

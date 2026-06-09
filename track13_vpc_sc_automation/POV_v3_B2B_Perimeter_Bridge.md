@@ -122,7 +122,7 @@ By combining these rules, we ensure that if a compromised vendor SA tries to acc
 The table below lists the security threat scenarios evaluated against our B2B Perimeter Bridge architecture:
 
 | Test Case | Actor | Origin Network | Target Service | Expected | Result |
-| :--- | :--- | :--- | :--- | :--- | :--- |
+ | :--- | :--- | :--- | :--- | :--- | :--- |
 | **TC_01** | Internal Operator | Secure Network | Vertex AI Predict | **ALLOW** | Authorized internal operation. |
 | **TC_02** | External Client | Public IP | Vertex AI Predict | **DENIED** | Blocked ingress. |
 | **TC_03** | Internal Operator | Secure Network | BigQuery Export | **ALLOW** | Authorized egress to shared project. |

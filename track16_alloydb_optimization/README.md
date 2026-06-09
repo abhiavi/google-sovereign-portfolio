@@ -32,7 +32,7 @@ AlloyDB's **ScaNN** index resolves these constraints through:
 A concurrent simulation of 1,000 mixed HTAP transactions on a $100,000$ vector dataset yielded the following benchmarks:
 
 | Performance Metric | pgvector HNSW (Postgres) | AlloyDB ScaNN (Proprietary) | Performance Benefit |
-|:---|:---:|:---:|:---:|
+ | :--- | :---: | :---: | :---: |
 | **HTAP Throughput (QPS)** | $2,521.08\text{ QPS}$ | **$6,377.17\text{ QPS}$** | **+152.9% throughput increase** |
 | **Index Memory Footprint** | $380.86\text{ MB}$ | **$75.51\text{ MB}$** | **-80.1% RAM reduction (5.0x)** |
 | **Write Amplification (WAF)** | $19.25$ | **$1.11$** | **-94.2% write amplification** |

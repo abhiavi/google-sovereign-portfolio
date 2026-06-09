@@ -6,7 +6,10 @@ This directory contains the engineering blueprint and validation code for deploy
 In standard FP16 precision, loading both models and allocating the KV Cache for a single sequence length ($S = 4096$) is physically impossible on a 24GB L4 GPU.
 
 ### 1.1 VRAM Equation Breakdown (FP16)
-$$\text{VRAM}_{\text{total}} = \text{VRAM}_{\text{weights}} + \text{VRAM}_{\text{KV\_cache}} + \text{VRAM}_{\text{activations}} + \text{VRAM}_{\text{context}}$$
+
+$$
+\text{VRAM}_{\text{total}} = \text{VRAM}_{\text{weights}} + \text{VRAM}_{\text{KV\_cache}} + \text{VRAM}_{\text{activations}} + \text{VRAM}_{\text{context}}
+$$
 
 *   **Weight Footprint ($\text{VRAM}_{\text{weights}}$)**:
     *   Gemma 3 9B (Target): $9.0 \times 10^9 \times 2 \text{ bytes} \approx 16.76 \text{ GiB}$
@@ -21,7 +24,7 @@ $$\text{VRAM}_{\text{total}} = \text{VRAM}_{\text{weights}} + \text{VRAM}_{\text
 
 ### 1.2 Theoretical Comparison Table
 | Metric | FP16 State | INT8 State |
-| :--- | :--- | :--- |
+ | :--- | :--- | :--- |
 | **Weight VRAM** | 20.49 GiB | 10.24 GiB |
 | **KV Cache VRAM** | 0.86 GiB | 0.86 GiB |
 | **CUDA & Activations** | 2.75 GiB | 2.75 GiB |
