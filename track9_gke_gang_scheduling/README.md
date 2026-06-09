@@ -1,6 +1,6 @@
 # GKE Gang Scheduling & API Priority and Fairness (APF) Resilience
 
-Welcome to the **Track 9 GKE Sovereign Portfolio** repository. This project addresses distributed AI scheduling deadlocks and control plane instability under massive multi-agent traffic spikes ($10,000$ concurrent jobs) on Google Kubernetes Engine (GKE).
+Welcome to the **Track 9 GKE Sovereign Portfolio** repository. This project addresses distributed AI scheduling deadlocks and control plane instability under massive multi-agent traffic spikes (**10,000** concurrent jobs) on Google Kubernetes Engine (GKE).
 
 ---
 
@@ -15,14 +15,14 @@ Welcome to the **Track 9 GKE Sovereign Portfolio** repository. This project addr
 
 ## Telemetry Performance Summary
 
-A time-stepped simulation of $10,000$ multi-agent requests yielded the following comparative benchmarks:
+A time-stepped simulation of **10,000** multi-agent requests yielded the following comparative benchmarks:
 
 | Performance Metric | Default GKE (Greedy Scheduling, No APF) | Sovereign GKE (Kueue Gang Scheduling + APF) | Resiliency Benefit |
  | :--- | :---: | :---: | :---: |
 | **Control Plane (etcd) Status** | **Crashed** (Heartbeats Timed Out) | **Operational** (100% Uptime) | **Mitigates control plane collapse** |
-| **Completed Workloads** | $0$ | $453$ | **Admitted jobs finish successfully** |
-| **Hold-and-Wait Deadlocks** | $22$ | $24$ | **Eliminates greedy resource lockups** |
-| **Max etcd Write Latency** | $5.00\text{ s}$ | $0.005\text{ s}$ ($5.00\text{ ms}$) | **-99.9% latency reduction** |
+| **Completed Workloads** | **0** | **453** | **Admitted jobs finish successfully** |
+| **Hold-and-Wait Deadlocks** | **22** | **24** | **Eliminates greedy resource lockups** |
+| **Max etcd Write Latency** | **5.00s** | **0.005s** (**5.00ms**) | **-99.9% latency reduction** |
 | **Dropped Requests (429/503)** | $7,222$ | $0$ | **Prevents client-side connection drops** |
 
 ---
