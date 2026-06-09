@@ -1,54 +1,22 @@
 syntax = "proto3";
 
-package adk_mesh;
+package adk.mesh.v1;
 
-message TokenUsage {
-    int32 prompt_tokens = 1;
-    int32 completion_tokens = 2;
-    int32 total_tokens = 3;
+message AgentStateContext {
+  string agent_id = 1;
+  string session_id = 2;
+  int64 sequence_number = 3;
+  map<string, string> internal_state = 4;
+  string current_intent = 5;
+  int64 timestamp_utc = 6;
 }
 
-message MemoryEntry {
-    string role = 1;
-    string text = 2;
+message CommitStateRequest {
+  AgentStateContext state = 1;
 }
 
-message TensorMetadata {
-    int32 layers = 1;
-    int32 heads = 2;
-    int32 head_dim = 3;
-    string kv_cache_address = 4;
-    int64 bytes_allocated = 5;
-}
-
-message AgentStatePayload {
-    string session_id = 1;
-    string agent_role = 2;
-    int32 turn_index = 3;
-    TokenUsage token_usage = 4;
-    repeated string active_constraints = 5;
-    repeated MemoryEntry conversational_memory = 6;
-    TensorMetadata tensor_metadata = 7;
-    int32 chunk_index = 8;        // For streaming tracking
-    bool is_last_chunk = 9;       // To signal end of stream
-}
-
-message TransferStatus {
-    string status_message = 1;
-    bool success = 2;
-    int32 last_processed_chunk = 3;
-}
-
-message CheckpointRequest {
-    string session_id = 1;
-}
-
-message CheckpointResponse {
-    int32 last_processed_chunk = 1;
-    bool session_exists = 2;
-}
-
-service AgentStateService {
-    rpc TransferState(stream AgentStatePayload) returns (TransferStatus);
-    rpc GetCheckpoint(CheckpointRequest) returns (CheckpointResponse);
+message CommitStateResponse {
+  bool success = 1;
+  int64 spanner_commit_timestamp = 2;
+  string error_message = 3;
 }

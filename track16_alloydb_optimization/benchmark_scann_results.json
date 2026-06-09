@@ -1,0 +1,24 @@
+{
+  "hnsw": {
+    "index_type": "HNSW",
+    "duration": 0.396655857010046,
+    "qps": 2521.0771058264577,
+    "completed_writes": 477,
+    "completed_reads": 523,
+    "write_amplification_factor": 19.25490075717702,
+    "memory_footprint_mb": 380.859375,
+    "lock_contention_events": 94,
+    "total_gb_written": 0.026277316077728572
+  },
+  "scann": {
+    "index_type": "ScaNN",
+    "duration": 0.15680930102826096,
+    "qps": 6377.172740663993,
+    "completed_writes": 456,
+    "completed_reads": 544,
+    "write_amplification_factor": 1.106891337247786,
+    "memory_footprint_mb": 75.505126953125,
+    "lock_contention_events": 0,
+    "total_gb_written": 0.00144407973227975
+  }
+}

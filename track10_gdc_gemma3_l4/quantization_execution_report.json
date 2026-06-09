@@ -1,0 +1,36 @@
+{
+  "hardware": {
+    "gpu": "NVIDIA L4",
+    "physical_vram_gb": 24.0,
+    "usable_vram_gib": 22.5
+  },
+  "fp16_state": {
+    "vram_details": {
+      "precision": "FP16",
+      "target_weights_gib": 16.763806343078613,
+      "draft_weights_gib": 3.725290298461914,
+      "total_weights_gib": 20.489096641540527,
+      "total_kv_cache_gib": 0.859375,
+      "cuda_context_gib": 1.25,
+      "activation_overhead_gib": 1.5,
+      "total_vram_required_gib": 24.098471641540527
+    },
+    "simulated_ttft_ms": 82.06063488149084,
+    "oom_triggered": true
+  },
+  "int8_state": {
+    "vram_details": {
+      "precision": "INT8",
+      "target_weights_gib": 8.381903171539307,
+      "draft_weights_gib": 1.862645149230957,
+      "total_weights_gib": 10.244548320770264,
+      "total_kv_cache_gib": 0.859375,
+      "cuda_context_gib": 1.25,
+      "activation_overhead_gib": 1.5,
+      "total_vram_required_gib": 13.853923320770264
+    },
+    "simulated_ttft_ms": 4.387200128010591,
+    "oom_triggered": false,
+    "vram_headroom_gib": 8.646076679229736
+  }
+}

@@ -1,0 +1,26 @@
+[
+  {
+    "test_case_id": "TC_07_AUTHORIZED_B2B_BRIDGE_INGRESS",
+    "description": "Authorized external vendor queries BigQuery from trusted network.",
+    "status": "PASS",
+    "expected": "ALLOW",
+    "actual_decision": "ALLOW",
+    "error_message": null
+  },
+  {
+    "test_case_id": "TC_08_UNAUTHORIZED_B2B_BRIDGE_UNTRUSTED_SOURCE",
+    "description": "External vendor SA queries BigQuery from public IP (no access levels).",
+    "status": "PASS",
+    "expected": "DENIED",
+    "actual_decision": "DENIED",
+    "error_message": "403 VPC Service Controls: Ingress denied. Request from serviceAccount:vendor-analyst-sa@external-consulting-firm.iam.gserviceaccount.com to bigquery.googleapis.com/google.cloud.bigquery.v2.TableService.GetData is blocked. Missing required access level or resource binding."
+  },
+  {
+    "test_case_id": "TC_09_UNAUTHORIZED_B2B_BRIDGE_UNRESTRICTED_API",
+    "description": "External vendor SA attempts to access Vertex AI prediction APIs.",
+    "status": "PASS",
+    "expected": "DENIED",
+    "actual_decision": "DENIED",
+    "error_message": "VPC Service Controls: Ingress denied. Request from serviceAccount:vendor-analyst-sa@external-consulting-firm.iam.gserviceaccount.com to aiplatform.googleapis.com/google.cloud.aiplatform.v1.PredictionService.Predict is blocked. Missing required access level or resource binding."
+  }
+]

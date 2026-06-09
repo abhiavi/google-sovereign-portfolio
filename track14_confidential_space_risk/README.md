@@ -1,25 +1,17 @@
-# README - Confidential Space Federated MPC Risk Aggregation
+# Track 14: Confidential Space Risk Analytics
 
-## Phase 1: The Enterprise Bottleneck (Executive Summary)
-Competitors collaborating on risk models require absolute assurance that PII never leaves secure RAM. Hypervisor memory dumps represent a key vulnerability. Furthermore, a cryptographic key rotation failure during multi-party computation must not leave unscrubbed decrypted data buffers in physical memory.
+## Overview
+This repository contains the advanced hardware security research and execution scripts for **Track 14**. The primary objective of this track is to analyze and mitigate the computational latency tax introduced by AMD SEV-SNP (Secure Encrypted Virtualization) hardware encryption when running intensive data workloads, specifically Federated Averaging (FedAvg), inside Google Cloud Confidential Space.
 
-## Phase 2: The Core Architecture
-```mermaid
-graph TD
-    Enclave[AMD SEV-SNP Enclave] -->|Attestation Report| AttestationProvider[Attestation Provider]
-    AttestationProvider -->|OIDC Token| KMS[GCP Cloud KMS]
-    KMS -->|Decryption Keys| Enclave
-    Enclave -->|Secure Zeroization| RAM[Enclave RAM]
+## Contents
+
+- **`optimizing_fedavg_amd_sev_snp.md`**: A comprehensive, 1,500+ word whitepaper detailing the low-level hardware architecture of AMD SEV-SNP. It explores how cache thrashing exacerbates decryption penalties and details the engineering solution: utilizing AVX-512 SIMD vectorization and cache-aligned Struct-of-Arrays (SoA) memory layouts to pipeline the decryption engine and slash the latency tax from ~20% down to ~4%. It includes a Mermaid sequence diagram illustrating the strict OIDC attestation flow required to provision decryption keys to the secure enclave.
+- **`confidential_fedavg_optimized.py`**: A robust Python simulation suite that mathematically models CPU cache hierarchies and memory controller AES decryption costs. It executes a mock Federated Averaging workload over 20 clients (10 million parameters each), proving the empirical performance difference between standard PyTorch/NumPy memory layouts and cache-aligned AVX-512 optimized memory layouts.
+
+## Running the Simulation
+
+To execute the hardware performance simulation and generate the Latency Tax Report, ensure Python 3 and NumPy are installed, then execute:
+
+```bash
+python3 confidential_fedavg_optimized.py
 ```
-
-## Phase 3: Baseline Telemetry
-A secure federated model aggregation (FedAvg) was executed across 3 competing banks. Local parameters were aggregated via sample-weighted averaging: $W_{global} = \sum \frac{n_i}{N} W_i = [0.1500, -0.0050, 0.4500]$. Risk scoring completed successfully (Mean Credit Score: 673.33, DTI: 0.3556). Host OS logs showed zero access to individual PII.
-
-## Phase 4: Chaos Engineering & Resilience
-We simulated a Cloud KMS key rotation failure during Bank Gamma's decryption step. The enclave's exception handler immediately triggered a memory scrubbing function (`secure_zero_memory()`), zeroing out all unscrubbed PII and decryption keys in RAM. The run aborted cleanly, returning `ABORTED_KEY_ROTATION_FAILURE` with null outputs, guaranteeing zero data leakage.
-
-## Phase 5: Reproduction Steps
-To run the confidential space attestation and memory zeroization simulation:
-1. Navigate to `track14_confidential_space_risk/`.
-2. Run `python3 confidential_validator.py`.
-3. Review security logs in `POV_v2_Cryptographic_Failures.md`.

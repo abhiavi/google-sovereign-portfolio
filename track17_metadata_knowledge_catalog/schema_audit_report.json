@@ -1,0 +1,70 @@
+[
+  {
+    "test_case_id": "TC_01_VALID_V101_PAYLOAD",
+    "description": "Producer writes valid v1.0.1 record.",
+    "target_version": "1.0.1",
+    "expected": "APPROVED",
+    "actual": "APPROVED",
+    "status": "PASS",
+    "validation_details": {
+      "status": "APPROVED",
+      "target_version": "1.0.1",
+      "reason": "Payload matches the registered schema contract perfectly."
+    }
+  },
+  {
+    "test_case_id": "TC_02_VALID_V102_PAYLOAD",
+    "description": "Producer writes valid v1.0.2 record (with optional email).",
+    "target_version": "1.0.2",
+    "expected": "APPROVED",
+    "actual": "APPROVED",
+    "status": "PASS",
+    "validation_details": {
+      "status": "APPROVED",
+      "target_version": "1.0.2",
+      "reason": "Payload matches the registered schema contract perfectly."
+    }
+  },
+  {
+    "test_case_id": "TC_03_REGRESSION_DRIFT_VIOLATION",
+    "description": "Writer submits email field to v1.0.1 endpoint (additionalProperties violation).",
+    "target_version": "1.0.1",
+    "expected": "QUARANTINED",
+    "actual": "QUARANTINED",
+    "status": "PASS",
+    "validation_details": {
+      "status": "QUARANTINED",
+      "error_type": "SCHEMA_CONTRACT_VIOLATION",
+      "drift_field": "root",
+      "reason": "Schema drift detected on 'root': Additional properties are not allowed ('email' was unexpected)"
+    }
+  },
+  {
+    "test_case_id": "TC_04_TYPE_DRIFT_VIOLATION",
+    "description": "Writer sends string for id instead of integer.",
+    "target_version": "1.0.1",
+    "expected": "QUARANTINED",
+    "actual": "QUARANTINED",
+    "status": "PASS",
+    "validation_details": {
+      "status": "QUARANTINED",
+      "error_type": "SCHEMA_CONTRACT_VIOLATION",
+      "drift_field": "id",
+      "reason": "Schema drift detected on 'id': 'invalid_integer_id' is not of type 'integer'"
+    }
+  },
+  {
+    "test_case_id": "TC_05_MISSING_REQUIRED_FIELD_VIOLATION",
+    "description": "Writer omits required name field.",
+    "target_version": "1.0.2",
+    "expected": "QUARANTINED",
+    "actual": "QUARANTINED",
+    "status": "PASS",
+    "validation_details": {
+      "status": "QUARANTINED",
+      "error_type": "SCHEMA_CONTRACT_VIOLATION",
+      "drift_field": "root",
+      "reason": "Schema drift detected on 'root': 'name' is a required property"
+    }
+  }
+]

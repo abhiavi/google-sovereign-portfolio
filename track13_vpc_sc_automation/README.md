@@ -1,29 +1,39 @@
-# README - VPC Service Controls Automation & B2B Perimeter Bridge
+# Track 13: VPC Service Controls B2B Perimeter Bridge Automation
 
-## Phase 1: The Enterprise Bottleneck (Executive Summary)
-Enforcing zero-trust isolation boundaries across cloud environments is complex and prone to manual configuration drift. Upstream nested services (specifically Cloud Build) represent a key risk vector for insider-threat data exfiltration. Furthermore, external B2B vendor analysts require access to specific data resources (BigQuery) without allowing lateral movement to other restricted resources (Vertex AI).
+This directory contains the security architecture, Terraform configuration, and SDK validation code for building a secure **B2B Service Perimeter Bridge** in Google Cloud.
 
-## Phase 2: The Core Architecture
-```mermaid
-graph TD
-    subgraph Sovereign Perimeter
-        restricted[Storage, BigQuery, Vertex AI]
-        CloudBuild[Cloud Build SA]
-    end
-    Client[Internal Client] -->|mTLS Ingress| restricted
-    CloudBuild -->|Blocked Egress| public_bucket[Unauthorized GCS Bucket]
-    Vendor[B2B Vendor SA] -->|Authorized Ingress via Bridge| BigQuery[BigQuery Table Read]
-    Vendor -.->|Blocked Lateral Move| Vertex[Vertex Prediction API]
+## 1. The B2B Ingress Boundary
+When exposing a secure BigQuery dataset to a trusted third-party vendor, standard network policies are insufficient. Security must be enforced on a zero-trust model combining:
+1.  **IAM Identity**: Only the vendor's dedicated Service Account (`vendor-analyst-sa@...`) is granted access.
+2.  **Network Origin**: Access is restricted to requests originating from the vendor's trusted IP gateways, mapped to the Access Level `al_vendor_trusted_network` (`198.51.100.4/32`).
+3.  **API Constraints**: The vendor SA is permitted to perform only specific BigQuery operations (`GetData`, `ListTables`). Lateral movement to other restricted services (like Vertex AI or Storage) is blocked.
+
+---
+
+## 2. Production Org Policy Overrides
+In a real production environment, VPC-SC ingress rules will fail unless the hosting project overrides the global GCP Organization Policy **`constraints/gcp.restrictCrossProjectServiceAccounts`**.
+
+By default, this policy blocks resources from attaching or accepting service accounts belonging to external projects. To resolve this:
+*   We apply a project-level override on our hosting project (`projects/my_project`).
+*   We add a whitelist list policy allowing service accounts under the vendor's specific project identifier (`under:projects/external_vendor_project`).
+*   This is fully declared and deployed in the Terraform setup.
+
+---
+
+## 3. Directory Contents
+*   [POV_v3_B2B_Perimeter_Bridge.md](file:///home/abhishek/ObsidianVault/03_Active_Projects/google-sovereign-portfolio/track13_vpc_sc_automation/POV_v3_B2B_Perimeter_Bridge.md): A detailed, 1,500+ word whitepaper analyzing identity federation, network ingress/egress, and organization policy coordination.
+*   [perimeter_bridge.tf](file:///home/abhishek/ObsidianVault/03_Active_Projects/google-sovereign-portfolio/track13_vpc_sc_automation/perimeter_bridge.tf): Deployable Terraform code declaring the Access Context Manager policy, Access Levels, Service Perimeters, and the project-level Organization Policy override.
+*   [validate_bridge.py](file:///home/abhishek/ObsidianVault/03_Active_Projects/google-sovereign-portfolio/track13_vpc_sc_automation/validate_bridge.py): A Python validation script simulating Google Cloud SDK Client calls and evaluating policy checks.
+*   [bridge_validation_report.json](file:///home/abhishek/ObsidianVault/03_Active_Projects/google-sovereign-portfolio/track13_vpc_sc_automation/bridge_validation_report.json): Execution telemetry metrics exported by the validation runner.
+
+---
+
+## 4. Validation execution
+To run the SDK query simulation and generate the validation report:
+```bash
+uv run python3 validate_bridge.py
 ```
-
-## Phase 3: Baseline Telemetry
-The declarative perimeter is defined in `vpc_sc_perimeter.yaml` and compiled dynamically by Terraform. The baseline 6-case test suite validated that unauthorized ingress from public networks is blocked, and Cloud Build service account attempts to exfiltrate storage objects to outside buckets trigger a `VPC_SC_EGRESS_VIOLATION` at the service boundary.
-
-## Phase 4: Chaos Engineering & Resilience
-We simulated a third-party audit containing 9 test cases. The B2B perimeter bridge successfully allowed authorized vendor analysts to execute queries on BigQuery, provided they originated from a verified trusted network access level (`TC_07`). If the credentials originated from a public IP (`TC_08`) or attempted to make lateral API predictions on Vertex AI (`TC_09`), the request was immediately blocked.
-
-## Phase 5: Reproduction Steps
-To run the perimeter isolation and B2B bridge validation tests:
-1. Navigate to `track13_vpc_sc_automation/`.
-2. Run `python3 validate_perimeter_isolation.py`.
-3. View perimeter log audit trails in `POV_v2_Cross_Org_Perimeters.md`.
+The script runs three primary scenarios:
+1.  **TC_07 (Authorized B2B Ingress)**: Simulates the vendor SA querying BigQuery from the trusted IP address block -> **ALLOW** (mock rows returned).
+2.  **TC_08 (Unauthorized B2B Source)**: Simulates the vendor SA attempting query from a public IP (no Access Level) -> **DENIED** (raises a mock GCP `Forbidden` exception).
+3.  **TC_09 (Lateral Movement)**: Simulates the vendor SA attempting to call Vertex AI prediction endpoints -> **DENIED** (prohibited by service restrictions).

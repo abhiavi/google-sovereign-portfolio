@@ -1,27 +1,54 @@
-# README - Metadata Catalog Active Data Contracts & Collision Resolution
+# Track 17: Active Data Contracts & Immutable Schema Registry
 
-## Phase 1: The Enterprise Bottleneck (Executive Summary)
-Schema drift in federated data meshes causes severe downstream problems, specifically triggering data hallucinations in AI agents. Additionally, simultaneous updates to the catalog from different domain teams can cause semantic collisions, where late-arriving out-of-order webhooks overwrite new schema versions with stale ones.
+This directory contains the engineering specifications, architectural blueprints, and validation engine for building a strict, **Immutable Semantic Versioning Schema Registry** on Google Cloud.
 
-## Phase 2: The Core Architecture
-```mermaid
-graph TD
-    AuditLog[GCS Audit Logs] --> Handler[Schema Event Handler]
-    Handler -->|Validate Contract| Validator{Matches JSON Schema?}
-    Validator -->|No| Rollback[CONTRACT_VIOLATION & Rollback]
-    Validator -->|Yes| ConcurrencyCheck{Origin Timestamp Monotonic?}
-    ConcurrencyCheck -->|Yes| Catalog[Commit to Catalog]
-    ConcurrencyCheck -->|No| StaleReject[Reject Stale Update]
+## 1. Ripping out Last-Writer-Wins (LWW)
+In multi-producer streaming and analytics databases, a **Last-Writer-Wins (LWW)** metadata policy updates the global table schema whenever any writer pushes a schema modification. This results in:
+*   **Schema Regressions**: A legacy producer running older code pushes data and inadvertently drops recently added fields from the catalog.
+*   **Data Corruption**: Incompatible type updates are accepted silently, causing data truncation or query failures for downstream analytics.
+
+This architecture replaces LWW with **Active Data Contracts** enforced at the ingestion boundary. Once a schema version (e.g. `v1.0.1`) is registered, it is **completely immutable** and can never be modified or overwritten.
+
+---
+
+## 2. Event-Driven Validation Pipeline
+Validation is enforced before committal using a decoupled, serverless validation gateway:
+
+```
+[Producer Write] ──> [Staging Landing Zone (BQ)]
+                             │
+                             ▼ (Audit Log Trigger)
+                 [Cloud Logging / Pub/Sub Broker]
+                             │
+                             ▼
+                 [Validation Cloud Function] <─── [SemVer Schema Registry]
+                             │
+              ┌──────────────┴──────────────┐
+              ▼ (APPROVED)                  ▼ (QUARANTINED)
+      [Production BQ Table]        [Quarantine / DLQ Table]
 ```
 
-## Phase 3: Baseline Telemetry
-Data contracts are defined as JSON schemas. Upstream schema drift was detected in real-time by trapping audit log events (e.g., `TableService.UpdateTable`). Dropping a column raised a `CONTRACT_VIOLATION` exception, automatically blocking ingestion and triggering a rollback of the upstream migration.
+1.  **Staging Ingestion**: Data is written to a staging landing zone table, including the metadata attribute declaring its version target (e.g., `_schema_version: "1.0.2"`).
+2.  **Audit Event Trigger**: BigQuery audit logs capture the insert job and trigger a Cloud Function via Cloud Logging and Pub/Sub.
+3.  **Active Verification**: The Cloud Function fetches the corresponding schema from the registry and validates the payload structure. If it drifts, the payload is routed to a **Quarantine Table (Dead-Letter Queue)** and raises an alert.
 
-## Phase 4: Chaos Engineering & Resilience
-We simulated network latency causing out-of-order schema updates. The catalog asserted event-origin monotonicity using a Last-Writer-Wins (LWW) resolution based on the audit log's UTC event timestamp. Stale, delayed events were rejected, preventing semantic collisions and ensuring eventual catalog consistency.
+---
 
-## Phase 5: Reproduction Steps
-To run the active data contracts and concurrency resolution tests:
-1. Navigate to `track17_metadata_knowledge_catalog/`.
-2. Run `python3 test_event_handler.py`.
-3. View audit diagnostics in `POV_v2_Semantic_Collisions.md`.
+## 3. Directory Contents
+*   [POV_v3_Immutable_Schema_Registry.md](file:///home/abhishek/ObsidianVault/03_Active_Projects/google-sovereign-portfolio/track17_metadata_knowledge_catalog/POV_v3_Immutable_Schema_Registry.md): Detailed 1,500+ word whitepaper analyzing data contract enforcement, SemVer mathematical compatibility, and GCP pipeline implementation.
+*   [schema_registry_validator.py](file:///home/abhishek/ObsidianVault/03_Active_Projects/google-sovereign-portfolio/track17_metadata_knowledge_catalog/schema_registry_validator.py): Runnable PyTorch-independent Python script utilizing the `jsonschema` library to model registry immutability and payload validation.
+*   [schema_audit_report.json](file:///home/abhishek/ObsidianVault/03_Active_Projects/google-sovereign-portfolio/track17_metadata_knowledge_catalog/schema_audit_report.json): Execution telemetry results recording the 5-case validation run.
+
+---
+
+## 4. Execution Steps
+To execute the validation runner and verify schema controls:
+```bash
+uv run --with jsonschema python3 schema_registry_validator.py
+```
+The test suite validates:
+*   **LWW Overwrite Block**: Confirms that trying to overwrite an existing version (`v1.0.1`) raises a `PermissionError`.
+*   **TC_01 / TC_02 (Valid Inputs)**: Verifies that payloads matching `1.0.1` and `1.0.2` schemas are correctly `APPROVED`.
+*   **TC_03 (Regression Drift)**: Detects when a producer sends unexpected properties (additionalProperties violation) -> `QUARANTINED`.
+*   **TC_04 (Type Drift)**: Detects when a field (e.g., `id`) contains an invalid type -> `QUARANTINED`.
+*   **TC_05 (Missing Required Field)**: Detects when required columns are omitted -> `QUARANTINED`.

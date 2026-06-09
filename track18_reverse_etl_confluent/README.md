@@ -1,26 +1,22 @@
-# README - Confluent Event-Driven CRM & DLQ Backpressure
+# Track 18: Reverse ETL Confluent Impedance Mismatch
 
-## Phase 1: The Enterprise Bottleneck (Executive Summary)
-Reverse ETL synchronizing analytical predictions back to CRM platforms requires exactly-once semantics to prevent duplicate actions. During high-throughput bursts, data anomalies are routed to a Dead-Letter Queue (DLQ). However, a systemic upstream failure can overflow the DLQ, triggering broker I/O bottlenecks that crash Connect worker nodes.
+## Overview
+This repository contains the architectural blueprints and executable simulation for **Track 18: Reverse ETL Confluent**. The primary objective of this track is to solve a critical architectural vulnerability that occurs when connecting strict streaming engines to stateless delivery systems—specifically, the boundary between Confluent Kafka Connect and Google Cloud Pub/Sub.
 
-## Phase 2: The Core Architecture
-```mermaid
-graph TD
-    Kafka[Kafka Topic] --> Worker[Kafka Connect Sink Worker]
-    Worker -->|Exactly-Once| PubSub[Pub/Sub CRM Endpoint]
-    Worker -->|Malformed Data| DLQ[Dead Letter Queue]
-    DLQ -->|Monitor Rate| CircuitBreaker{Errors >= 10k?}
-    CircuitBreaker -->|Yes| Backpressure[Pause Source Connector]
+## Contents
+
+- **`exactly_once_impedance_mismatch_redis.md`**: A comprehensive, 1,500+ word technical whitepaper. It defines the "Exactly-Once Impedance Mismatch" caused by Kafka's retries colliding with Pub/Sub's at-least-once delivery guarantees. The document architects a solution utilizing a Redis in-memory cache to build an idempotent ingestion layer, complete with a Mermaid sequence diagram mapping out the deduplication pipeline.
+- **`redis_idempotent_consumer.py`**: A robust Python simulation (150+ lines). It models a network retry storm generating hundreds of duplicate messages from a mock Pub/Sub queue. It demonstrates connecting to a Redis instance (with a simulated fallback) and utilizing atomic `SETNX` (Set if Not Exists) operations to filter out duplicates, guaranteeing exactly-once execution.
+
+## Running the Simulation
+
+To execute the Redis deduplication simulation and view the pipeline execution audit:
+
+```bash
+# Optional: Ensure the redis python package is installed
+# pip install redis
+
+python3 redis_idempotent_consumer.py
 ```
 
-## Phase 3: Baseline Telemetry
-A burst of 100,000 events was processed with exactly-once settings (`read_committed` isolation). Ingestion speeds reached **~900k msg/s**. When a 5% error rate was injected, 5,000 malformed messages were cleanly routed to the DLQ, allowing the other 95,000 valid messages to commit without delay.
-
-## Phase 4: Chaos Engineering & Resilience
-Under a massive barrage of 50,000 corrupted events, a circuit breaker was triggered at **10,000 continuous errors** (the max DLQ capacity). To protect Connect worker node RAM and I/O from overloading, the system asserted backpressure, pausing the source connector to prevent a cascading crash.
-
-## Phase 5: Reproduction Steps
-To execute the exactly-once Kafka Connect and DLQ backpressure test:
-1. Navigate to `track18_reverse_etl_confluent/`.
-2. Run `python3 test_topology.py`.
-3. Review backpressure event logging in `POV_v2_DLQ_Backpressure.md`.
+The simulation will artificially inject a massive network storm (60% duplicate probability) and prove that the Redis boundary successfully drops every duplicate payload.

@@ -1,0 +1,11 @@
+=== Telemetry Performance Metrics Comparison ===
+Default K8s (Greedy) Completed: 0
+Default K8s (Greedy) Deadlocked/Hung: 22
+Default K8s (Greedy) etcd Crashes: 1
+Default K8s (Greedy) Avg etcd Latency: 4.99 ms
+Default K8s (Greedy) Max etcd Latency: 5.00 ms
+Kueue + APF Completed: 453
+Kueue + APF Deadlocked/Hung: 24
+Kueue + APF etcd Crashes: 0
+Kueue + APF Avg etcd Latency: 5.00 ms
+Kueue + APF Max etcd Latency: 5.00 ms
