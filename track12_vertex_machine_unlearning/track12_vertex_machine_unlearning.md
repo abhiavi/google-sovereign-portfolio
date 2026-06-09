@@ -60,9 +60,9 @@ y = x W^T = x W_0^T + \frac{\alpha}{r} x A^T B^T
 $$
 
 ### Cohort Partitioning
-Under the Federated LoRA paradigm, the user database is partitioned into discrete cohorts ($C_1, C_2, \dots, C_M$) based on regulatory boundaries, enterprise client divisions, or geographical namespaces. 
+Under the Federated LoRA paradigm, the user database is partitioned into discrete cohorts (`C_1`, `C_2`, ..., `C_M`) based on regulatory boundaries, enterprise client divisions, or geographical namespaces. 
 
-For each cohort $i$, we instantiate a dedicated LoRA adapter $(A_i, B_i)$. When training on data from cohort $C_i$, only $(A_i, B_i)$ are updated; the base model parameters $W_0$ and all other cohort adapters remain completely frozen.
+For each cohort `$i$`, we instantiate a dedicated LoRA adapter (`A_i`, `B_i`). When training on data from cohort `C_i`, only (`A_i`, `B_i`) are updated; the base model parameters `W_0` and all other cohort adapters remain completely frozen.
 
 ---
 
@@ -93,7 +93,7 @@ flowchart TD
     ForwardBase --> Output
 ```
 
-This routing layer guarantees that user data is physically isolated during inference. It ensures that queries from Cohort $j$ never trigger computational paths containing weights modified by Cohort $i$.
+This routing layer guarantees that user data is physically isolated during inference. It ensures that queries from Cohort `j` never trigger computational paths containing weights modified by Cohort `i`.
 
 ---
 
@@ -102,16 +102,16 @@ This routing layer guarantees that user data is physically isolated during infer
 Decoupling cohort memory into isolated LoRA adapters solves the two major dilemmas of machine unlearning:
 
 ### 1. Verification of 100% Data Deletion
-When a cohort $C_i$ submits a DPDP deletion request:
-1.  **Memory Eviction**: The model server removes adapter $(A_i, B_i)$ from its dynamic routing registry. Any subsequent requests matching cohort $C_i$ fall back to the base model $W_0$.
+When a cohort `C_i` submits a DPDP deletion request:
+1.  **Memory Eviction**: The model server removes adapter (`A_i`, `B_i`) from its dynamic routing registry. Any subsequent requests matching cohort `C_i` fall back to the base model `W_0`.
 2.  **Storage Shredding**: The files containing the weights (e.g., `l1_A.npy`, `l1_B.npy`) are deleted from the underlying storage volume (e.g., persistent disks or cloud object buckets).
 
-Because $W_0$ was frozen and never exposed to the raw text of cohort $C_i$ during training, there is **zero mathematical residue** of the user's data left in the model. The unlearned state is mathematically identical to a model that was never trained on cohort $C_i$ in the first place, providing a $100\%$ clean compliance audit.
+Because `W_0` was frozen and never exposed to the raw text of cohort `C_i` during training, there is **zero mathematical residue** of the user's data left in the model. The unlearned state is mathematically identical to a model that was never trained on cohort `C_i` in the first place, providing a $100\%$ clean compliance audit.
 
 ### 2. Elimination of Catastrophic Forgetting (0.0% Degradation)
 Catastrophic forgetting occurs in standard deep learning because weight updates for a new task overwrite the parameter configurations optimized for previous tasks. In our architecture:
-*   The base model weights $W_0$ are frozen, preserving the model's core general knowledge (pre-training capabilities).
-*   Deleting adapter $(A_i, B_i)$ has exactly **zero impact** on $(A_j, B_j)$ weights because they do not share any parameter space. 
+*   The base model weights `W_0` are frozen, preserving the model's core general knowledge (pre-training capabilities).
+*   Deleting adapter (`A_i`, `B_i`) has exactly **zero impact** on (`A_j`, `B_j`) weights because they do not share any parameter space. 
 *   Therefore, the catastrophic forgetting rate for surviving cohorts is **$0.0\%$**, and their performance remains completely unchanged.
 
 ---
