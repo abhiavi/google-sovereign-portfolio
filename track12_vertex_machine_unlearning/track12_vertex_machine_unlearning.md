@@ -14,23 +14,23 @@ This paper rejects legacy approximation-based unlearning approaches—specifical
 In early machine unlearning literature, researchers attempted to perform "post-hoc" unlearning by identifying the statistical influence of specific training samples on the final model weights. The most prominent framework is based on **influence functions**, which attempt to reverse the effect of a training sample by computing its gradient contribution and subtracting it from the final model.
 
 ### The Influence Function Approximation
-The influence of a training point $z$ on the empirical risk minimizer weights $\theta^*$ is formulated using the inverse Hessian matrix of the loss function:
+The influence of a training point $z$ on the empirical risk minimizer weights $\theta^{\ast}$ is formulated using the inverse Hessian matrix of the loss function:
 
 $$
-\mathcal{I}_{\text{up, loss}}(z) = -\nabla_\theta L(z, \theta^*)^T H_{\theta^*}^{-1} \nabla_\theta L(z, \theta^*)
+\mathcal{I}_{\text{up, loss}}(z) = -\nabla_\theta L(z, \theta^{\ast})^T H_{\theta^{\ast}}^{-1} \nabla_\theta L(z, \theta^{\ast})
 $$
 
-where $H_{\theta^*}$ is the Hessian matrix of the model's loss across the entire training dataset:
+where $H_{\theta^{\ast}}$ is the Hessian matrix of the model's loss across the entire training dataset:
 
 $$
-H_{\theta^*} = \frac{1}{N} \sum_{i=1}^N \nabla^2_\theta L(z_i, \theta^*)
+H_{\theta^{\ast}} = \frac{1}{N} \sum_{i=1}^N \nabla^2_\theta L(z_i, \theta^{\ast})
 $$
 
-To perform unlearning, the platform operator calculates $\mathcal{I}_{\text{up, loss}}(z)$ and subtracts this approximate gradient vector from the model weights $\theta^*$. While mathematically elegant in theory, this approach fails catastrophically at scale:
+To perform unlearning, the platform operator calculates $\mathcal{I}_{\text{up, loss}}(z)$ and subtracts this approximate gradient vector from the model weights $\theta^{\ast}$. While mathematically elegant in theory, this approach fails catastrophically at scale:
 
 1.  **Computational Intractability**: The Hessian matrix $H$ has dimensions $P \times P$, where $P$ is the number of model parameters. For a modest $9\text{B}$ parameter model, the Hessian contains $81 \times 10^{18}$ entries. Computing, storing, and inverting such a matrix is computationally infeasible. Even state-of-the-art Hessian approximations (e.g., BFGS, L-BFGS) require $O(P^2)$ memory and $O(P^3)$ time.
 
-2.  **First-Order Approximation Error**: Influence functions rely on a local Taylor expansion around $\theta^*$. In highly non-linear deep neural networks, this approximation degrades rapidly when removed data is far from the training set's central tendency. The approximation breaks down entirely for data at distribution tails.
+2.  **First-Order Approximation Error**: Influence functions rely on a local Taylor expansion around $\theta^{\ast}$. In highly non-linear deep neural networks, this approximation degrades rapidly when removed data is far from the training set's central tendency. The approximation breaks down entirely for data at distribution tails.
 
 3.  **Auditing Failure**: Sub-optimal weight updates cannot guarantee that the user's data has been completely erased. Under strict DPDP audits, any residual leakage of training data (e.g., via membership inference attacks) violates the legal standard. Approximate methods cannot satisfy regulatory audits that demand proof of zero residue.
 
