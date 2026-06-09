@@ -5,7 +5,7 @@ The enactment of global data privacy regulations—such as the European Union’
 
 For standard relational databases, compliance is a solved indexing problem. For deep learning models, however, it represents an existential crisis. Standard fine-tuning propagates gradient updates throughout millions of shared network weights. Once data is absorbed, it is mathematically "entangled" within the model's parameterized memory. 
 
-This paper rejects legacy approximation-based unlearning approaches—specifically influence functions and Hessian inversions—due to their computational intractability and lack of strict compliance guarantees. Instead, we present a production-ready architectural paradigm: **Federated Cohort LoRA Isolation**. By constraining cohort-specific learning to discrete Low-Rank Adaptation (LoRA) matrices, we achieve **$100\%$ verifiable unlearning** via simple file deletion and memory hot-unloading, while guaranteeing **$0.0\%$ catastrophic forgetting** to the base model and other user cohorts.
+This paper rejects legacy approximation-based unlearning approaches—specifically influence functions and Hessian inversions—due to their computational intractability and lack of strict compliance guarantees. Instead, we present a production-ready architectural paradigm: **Federated Cohort LoRA Isolation**. By constraining cohort-specific learning to discrete Low-Rank Adaptation (LoRA) matrices, we achieve **100% verifiable unlearning** via simple file deletion and memory hot-unloading, while guaranteeing **0.0% catastrophic forgetting** to the base model and other user cohorts.
 
 ---
 
@@ -77,13 +77,13 @@ flowchart TD
     Router -->|Namespace: Cohort 2| ApplyC2[Load & Bind Cohort 2 Adapter]
     Router -->|Anonymous / Generic| ApplyBase[Bypass Adapters]
     
-    subgraph Multi-Cohort Serving Engine (vLLM / Triton)
+    subgraph Engine [Multi-Cohort Serving Engine]
         ApplyC1 --> ForwardC1[Forward Pass: y = x W_0^T + scaling * x A_1^T B_1^T]
         ApplyC2 --> ForwardC2[Forward Pass: y = x W_0^T + scaling * x A_2^T B_2^T]
         ApplyBase --> ForwardBase[Forward Pass: y = x W_0^T]
     end
 
-    subgraph DPDP Deletion Pipeline
+    subgraph Pipeline [DPDP Deletion Pipeline]
         DeletionRequest[DPDP Right to Be Forgotten: Cohort 1] --> Unload[Memory Unload: Remove A_1, B_1 from serving map]
         Unload --> Shred[Storage Shred: Delete cohort_1_financial/ files from disk]
     end
@@ -106,13 +106,13 @@ When a cohort `C_i` submits a DPDP deletion request:
 1.  **Memory Eviction**: The model server removes adapter (`A_i`, `B_i`) from its dynamic routing registry. Any subsequent requests matching cohort `C_i` fall back to the base model `W_0`.
 2.  **Storage Shredding**: The files containing the weights (e.g., `l1_A.npy`, `l1_B.npy`) are deleted from the underlying storage volume (e.g., persistent disks or cloud object buckets).
 
-Because `W_0` was frozen and never exposed to the raw text of cohort `C_i` during training, there is **zero mathematical residue** of the user's data left in the model. The unlearned state is mathematically identical to a model that was never trained on cohort `C_i` in the first place, providing a $100\%$ clean compliance audit.
+Because `W_0` was frozen and never exposed to the raw text of cohort `C_i` during training, there is **zero mathematical residue** of the user's data left in the model. The unlearned state is mathematically identical to a model that was never trained on cohort `C_i` in the first place, providing a 100% clean compliance audit.
 
 ### 2. Elimination of Catastrophic Forgetting (0.0% Degradation)
 Catastrophic forgetting occurs in standard deep learning because weight updates for a new task overwrite the parameter configurations optimized for previous tasks. In our architecture:
 *   The base model weights `W_0` are frozen, preserving the model's core general knowledge (pre-training capabilities).
 *   Deleting adapter (`A_i`, `B_i`) has exactly **zero impact** on (`A_j`, `B_j`) weights because they do not share any parameter space. 
-*   Therefore, the catastrophic forgetting rate for surviving cohorts is **$0.0\%$**, and their performance remains completely unchanged.
+*   Therefore, the catastrophic forgetting rate for surviving cohorts is **0.0%**, and their performance remains completely unchanged.
 
 ---
 
