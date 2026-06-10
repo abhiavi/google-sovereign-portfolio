@@ -63,8 +63,8 @@ flowchart TD
     Client[Client Workload Spike<br/>10,000 Job Submissions] -->|gRPC/REST Requests| APF{API Priority &amp; Fairness<br/>Flow Control}
     
     subgraph ControlPlane["GKE Control Plane - APF Ingress Filtering"]
-        APF -->|Classify: kueue-scheduling-flow| SchedulingPL[PriorityLevel: kueue-scheduling-priority<br/>Queue Limit: 150 | Concurrency: 40]
-        APF -->|Classify: system-node-flow| SystemPL[PriorityLevel: system-priority<br/>Bypass Queue | Concurrency: 150]
+        APF -->|Classify: kueue-scheduling-flow| SchedulingPL["PriorityLevel:<br/>kueue-scheduling-priority<br/>Queue Limit 150, Concurrency 40"]
+        APF -->|Classify: system-node-flow| SystemPL["PriorityLevel:<br/>system-priority<br/>Bypass Queue, Concurrency 150"]
     end
 
     SchedulingPL -->|Throttled Write Streams| APIServer[GKE API Server / etcd cluster]
